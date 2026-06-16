@@ -268,49 +268,64 @@
     return { poly, cracks, cx: z.ax, cy: z.ay };
   }
 
-  /* ── วาดเปลือกไข่ ── */
+  /* ── วาดเปลือกไข่ (รวมสีชมพู/ฟ้าด้านใน) ── */
   function drawShell(){
     sCtx.clearRect(0,0,W,H);
     sCtx.save();
-    // clip ครั้งเดียว ครอบทุกอย่าง รอยร้าวจะไม่ทะลุออกนอกขอบ
     sCtx.beginPath();
     sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
     sCtx.clip();
 
-    // พื้นเปลือก
+    // 1) พื้นสีชมพู/ฟ้า + emoji วาดก่อน (จะโชว์ตรงรูที่เจาะ)
+    const currentColor = (hits === 0) ? 'pink' : (HIT_COLORS[hits] || 'blue');
+    let cg;
+    if(currentColor === 'pink'){
+      cg = sCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+      cg.addColorStop(0,'#ffb3d9'); cg.addColorStop(1,'#ff69b4');
+    } else {
+      cg = sCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+      cg.addColorStop(0,'#80d0ff'); cg.addColorStop(1,'#1a8cff');
+    }
+    sCtx.fillStyle = cg;
+    sCtx.beginPath();
+    sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    sCtx.fill();
+    sCtx.font='19px serif'; sCtx.textAlign='center'; sCtx.textBaseline='middle';
+    const emojis = currentColor==='pink'
+      ? ['💕','🎀','💗','💖','✨']
+      : ['⭐','🌟','💙','🔵','✨'];
+    [[CX,CY],[CX-28,CY-35],[CX+30,CY-20],[CX-22,CY+38],[CX+25,CY+42]]
+      .forEach((p,i) => sCtx.fillText(emojis[i], p[0], p[1]));
+
+    // 2) ทาเปลือกทับ (opaque) ให้บังสีด้านล่าง
     const sg = sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
     sg.addColorStop(0,'#fff9ef');
     sg.addColorStop(0.55,'#f5e6c8');
     sg.addColorStop(1,'#d4a84b');
     sCtx.fillStyle = sg;
+    sCtx.beginPath();
+    sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
     sCtx.fill();
-
-    // เนื้อสัมผัสจุดเล็กๆ
-    sCtx.fillStyle='rgba(255,255,255,0.28)';
+    sCtx.fillStyle='rgba(255,255,255,0.25)';
     for(let i=0;i<120;i++){
       sCtx.beginPath();
       sCtx.arc(CX-RX+Math.random()*RX*2,CY-RY+Math.random()*RY*2,Math.random()*1.8,0,Math.PI*2);
       sCtx.fill();
     }
 
-    // เจาะรูด้วย polygon ขรุขระ (อยู่ใน clip แล้ว ไม่ทะลุขอบ)
+    // 3) เจาะรูเปลือก เผยสีด้านล่าง
     sCtx.globalCompositeOperation='destination-out';
     peeled.forEach(p => {
       if (!p.poly) return;
       sCtx.beginPath();
       sCtx.moveTo(p.poly[0].x, p.poly[0].y);
       for (let i = 1; i < p.poly.length; i++) {
-        // ใช้ quadratic curve เพื่อให้ขอบโค้งนิดๆ ไม่แข็งกระด้าง
-        const prev = p.poly[i-1];
-        const cur  = p.poly[i];
-        const mx   = (prev.x + cur.x) / 2;
-        const my   = (prev.y + cur.y) / 2;
-        sCtx.quadraticCurveTo(prev.x, prev.y, mx, my);
+        const prev = p.poly[i-1], cur = p.poly[i];
+        sCtx.quadraticCurveTo(prev.x, prev.y, (prev.x+cur.x)/2, (prev.y+cur.y)/2);
       }
       sCtx.closePath();
       sCtx.fill();
     });
-    // รูสุดท้าย (ครั้งที่ 5) เจาะทั้งหมด
     if (hits >= TOTAL) {
       sCtx.beginPath();
       sCtx.ellipse(CX,CY,RX+12,RY+12,0,0,Math.PI*2);
@@ -318,25 +333,18 @@
     }
     sCtx.globalCompositeOperation='source-over';
 
-    // วาดรอยร้าว (อยู่ใน clip ขอบไข่ ไม่ทะลุออกนอก)
+    // 4) รอยร้าว (อยู่ใน clip ไม่ทะลุขอบ)
     allCracks.forEach(c => {
       sCtx.beginPath();
-      sCtx.moveTo(c.x1, c.y1);
-      sCtx.lineTo(c.x2, c.y2);
-      sCtx.strokeStyle = 'rgba(100,65,20,0.75)';
-      sCtx.lineWidth = 1.2;
-      sCtx.lineCap = 'round';
-      sCtx.stroke();
+      sCtx.moveTo(c.x1, c.y1); sCtx.lineTo(c.x2, c.y2);
+      sCtx.strokeStyle='rgba(90,55,15,0.8)';
+      sCtx.lineWidth=1.2; sCtx.lineCap='round'; sCtx.stroke();
     });
 
-    sCtx.restore(); // ปิด clip ขอบไข่
-
-    // ขอบ
+    sCtx.restore();
     sCtx.beginPath();
     sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
-    sCtx.strokeStyle='#a07840';
-    sCtx.lineWidth=3;
-    sCtx.stroke();
+    sCtx.strokeStyle='#a07840'; sCtx.lineWidth=3; sCtx.stroke();
   }
 
   /* ── เศษเปลือกกระเด็น ── */
@@ -428,7 +436,6 @@
       const patch = makePatch(hitIdx);
       peeled.push(patch);
       allCracks.push(...patch.cracks);
-      drawColor(HIT_COLORS[hits]);
       drawShell();
       spawnChips(5+Math.floor(Math.random()*5));
       label.textContent=` ทุบอีก ${TOTAL-hits} ครั้ง!`;
@@ -457,7 +464,6 @@
   });
 
   /* ── init ── */
-  drawColor('pink');
   drawReveal();
   drawShell();
 
