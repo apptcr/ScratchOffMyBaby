@@ -1,292 +1,376 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baby Reveal Sparkle</title>
-    <meta property="og:title" content="มีของขวัญมาให้ขูดลุ้นกันครับ!" />
-    <meta property="og:description" content="ลองขูดดูซิว่า... จะได้อะไร?" />
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg-color: #f0f8ff;
-            --boy-blue: #007bff;
-            --gold: #d4af37;
-            --main-font: 'Kanit', sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby Egg Reveal</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #d4af37;
+    --bg: #fff8f0;
+    --font: 'Kanit', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        * { box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    background-image:
+      radial-gradient(#f9c84a33 1px, transparent 1px),
+      radial-gradient(#f9c84a22 1px, var(--bg) 1px);
+    background-size: 38px 38px;
+    background-position: 0 0, 19px 19px;
+    font-family: var(--font);
+    overflow: hidden;
+  }
 
-        body {
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(var(--gold) 1px, transparent 1px),
-                radial-gradient(var(--gold) 1px, var(--bg-color) 1px);
-            background-size: 40px 40px;
-            background-position: 0 0, 20px 20px;
-            font-family: var(--main-font);
-        }
+  .card {
+    background: #ffffffee;
+    border: 4px solid var(--gold);
+    border-radius: 28px;
+    padding: 36px 32px 32px;
+    text-align: center;
+    box-shadow: 0 16px 40px #0002;
+    max-width: 380px;
+    width: 92vw;
+  }
 
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.97);
-            padding: 40px 30px;
-            border-radius: 25px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-            border: 4px solid var(--gold);
-            max-width: 420px;
-            width: 100%;
-        }
+  h1 { font-size: 1.8rem; color: #444; margin-bottom: 6px; }
+  .subtitle { font-size: 1rem; color: #888; margin-bottom: 28px; }
 
-        h1 {
-            color: #444;
-            margin: 0 0 28px;
-            font-size: 2.2rem;
-        }
+  /* ─── EGG SCENE ─── */
+  .egg-scene {
+    position: relative;
+    width: 220px;
+    height: 260px;
+    margin: 0 auto 28px;
+  }
 
-        /* Wrapper กำหนดขนาดจริงด้วย CSS */
-        .scratch-wrapper {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            margin: 0 auto;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 6px solid var(--gold);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            /* ป้องกัน select/highlight บน mobile */
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
+  /* ชั้นเนื้อหา (ซ่อนไว้ก่อน) */
+  .egg-reveal {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+  }
+  .egg-reveal.show { opacity: 1; }
+  .reveal-icon { font-size: 64px; }
+  .reveal-name { font-size: 2rem; font-weight: 700; color: #007bff; margin-top: 4px; }
+  .reveal-sub  { font-size: 0.9rem; color: #555; margin-top: 2px; }
 
-        /* ชั้นเฉลยด้านล่าง — ซ่อนไว้ก่อน */
-        .scratch-result {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #0062cc 0%, #007bff 50%, #4da3ff 100%);
-            color: white;
-            gap: 6px;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-        }
+  /* SVG ไข่ */
+  .egg-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
 
-        .scratch-result.visible {
-            opacity: 1;
-        }
+  /* ─── CRACK PATHS — เริ่มล่องหน ─── */
+  .crack {
+    stroke: #5a3e1b;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    fill: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .crack.visible { opacity: 1; }
 
-        .result-icon { font-size: 72px; line-height: 1; }
-        .result-text-big {
-            font-size: 2.6rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-        }
-        .result-text-small { font-size: 1rem; opacity: 0.9; }
+  /* ─── SHATTER PIECES (ซ่อนไว้จนแตกสนิท) ─── */
+  .shard {
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
 
-        /* Canvas ขูด — อยู่บนสุด */
-        #scratch-canvas {
-            position: absolute;
-            inset: 0;
-            /* ขนาด CSS ตรงกับ wrapper เสมอ */
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-            z-index: 2;
-            /* transition สำหรับ fade-out เมื่อเผยเฉลย */
-            transition: opacity 0.8s ease;
-        }
+  /* ─── BUTTON ─── */
+  .hit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 36px;
+    font-family: var(--font);
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #f9c84a, #d4af37);
+    color: #5a3e1b;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px #d4af3755;
+    transition: transform 0.1s, box-shadow 0.1s, opacity 0.3s;
+    user-select: none;
+  }
+  .hit-btn:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 2px 8px #d4af3744; }
+  .hit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .instruction {
-            color: #666;
-            margin-top: 20px;
-            font-size: 1.05rem;
-            min-height: 1.6em;
-            animation: pulse 2s infinite;
-        }
+  .hammer { font-size: 1.5rem; display: inline-block; }
+  .hit-btn:not(:disabled):hover .hammer { animation: swing 0.4s ease; }
+  @keyframes swing {
+    0%   { transform: rotate(0deg); }
+    30%  { transform: rotate(-30deg); }
+    70%  { transform: rotate(15deg); }
+    100% { transform: rotate(0deg); }
+  }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
+  /* shake ไข่เมื่อทุบ */
+  @keyframes shake {
+    0%,100% { transform: translate(0,0) rotate(0deg); }
+    15%  { transform: translate(-6px,-3px) rotate(-3deg); }
+    30%  { transform: translate(6px,-5px) rotate(3deg); }
+    45%  { transform: translate(-4px,2px) rotate(-2deg); }
+    60%  { transform: translate(4px,4px) rotate(2deg); }
+    75%  { transform: translate(-2px,-2px) rotate(-1deg); }
+  }
+  .egg-scene.shaking { animation: shake 0.45s ease; }
 
-        @media (max-width: 380px) {
-            .scratch-wrapper { width: 260px; height: 260px; }
-            h1 { font-size: 1.8rem; }
-            .result-text-big { font-size: 2rem; }
-        }
-    </style>
+  /* ─── COUNTDOWN ─── */
+  .countdown {
+    height: 28px;
+    margin-top: 14px;
+    font-size: 1rem;
+    color: #888;
+    transition: opacity 0.3s;
+  }
+  .countdown span { color: var(--gold); font-weight: 700; font-size: 1.2rem; }
+
+  /* ─── PROGRESS DOTS ─── */
+  .progress {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    background: #eee;
+    transition: background 0.4s, border-color 0.4s;
+  }
+  .dot.hit  { background: #f9c84a; border-color: #d4af37; }
+  .dot.last { background: #ff6b6b; border-color: #cc3333; }
+</style>
 </head>
 <body>
+<div class="card">
+  <h1>🥚 ลุ้นเพศลูกน้อย!</h1>
+  <p class="subtitle">ทุบไข่ให้แตก แล้วจะรู้ว่าเป็นใคร</p>
 
-<div class="container">
-    <h1>ขูดลุ้นของขวัญกัน!</h1>
+  <!-- progress dots -->
+  <div class="progress" id="progress"></div>
 
-    <div class="scratch-wrapper" id="js-wrapper">
-        <!-- ชั้นเฉลย (ล่าง) -->
-        <div class="scratch-result">
-            <div class="result-icon">👶🏻⚽</div>
-            <div class="result-text-big">ได้ลูกชาย</div>
-            <div class="result-text-small">คุณปู่คุณย่าเตรียมรับขวัญนะครับ</div>
-        </div>
+  <!-- egg scene -->
+  <div class="egg-scene" id="eggScene">
 
-        <!-- ชั้นทองด้านบน -->
-        <canvas id="scratch-canvas"></canvas>
+    <!-- เนื้อหาใต้ไข่ -->
+    <div class="egg-reveal" id="eggReveal">
+      <div class="reveal-icon">👶🏻⚽</div>
+      <div class="reveal-name">ลูกชาย!</div>
+      <div class="reveal-sub">คุณปู่คุณย่าเตรียมรับขวัญนะครับ</div>
     </div>
 
-    <p class="instruction" id="js-instruction">ใช้นิ้วหรือเมาส์ขูดที่ช่องด้านบนได้เลย 🎁</p>
+    <!-- SVG ไข่ + รอยร้าว -->
+    <svg class="egg-svg" viewBox="0 0 220 260" id="eggSvg">
+      <defs>
+        <radialGradient id="eggGrad" cx="40%" cy="35%">
+          <stop offset="0%"   stop-color="#fff9ef"/>
+          <stop offset="60%"  stop-color="#f5e6c8"/>
+          <stop offset="100%" stop-color="#e8c88a"/>
+        </radialGradient>
+      </defs>
+
+      <!-- ตัวไข่ -->
+      <ellipse id="eggBody" cx="110" cy="138" rx="88" ry="110"
+               fill="url(#eggGrad)" stroke="#d4b07a" stroke-width="2.5"/>
+
+      <!-- รอยร้าว (ทยอยเปิด) -->
+      <!-- crack 1 -->
+      <g class="crack" id="crack1">
+        <polyline points="110,70 104,85 115,95 108,110"/>
+      </g>
+      <!-- crack 2 -->
+      <g class="crack" id="crack2">
+        <polyline points="150,100 142,112 155,122 148,138"/>
+        <polyline points="70,110  80,120  68,132"/>
+      </g>
+      <!-- crack 3 -->
+      <g class="crack" id="crack3">
+        <polyline points="125,150 118,165 130,175 120,190"/>
+        <polyline points="90,145  98,158  85,170  95,180"/>
+        <polyline points="160,140 168,155 158,165"/>
+      </g>
+      <!-- crack 4 (pre-final) -->
+      <g class="crack" id="crack4">
+        <polyline points="110,70  100,60  92,75  85,65"/>
+        <polyline points="110,70  118,58  128,70 136,60"/>
+        <polyline points="50,155  60,165  48,178  58,188"/>
+        <polyline points="170,155 162,168 172,180"/>
+      </g>
+
+      <!-- เศษเปลือก (แสดงตอนแตกสนิท) -->
+      <g id="shards">
+        <polygon class="shard" id="s1" points="60,80  110,65  85,110" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s2" points="110,65 160,80  135,105" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s3" points="38,130  70,110  60,160" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s4" points="180,130 148,110 162,165" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s5" points="55,200  90,180  75,230" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s6" points="165,200 130,185 148,235" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
+        <polygon class="shard" id="s7" points="95,245  125,245 110,210" fill="#f5e6c8" stroke="#c9a96e" stroke-width="1.5"/>
+      </g>
+    </svg>
+  </div>
+
+  <button class="hit-btn" id="hitBtn">
+    <span class="hammer">🔨</span> ทุบไข่!
+  </button>
+  <div class="countdown" id="countdown"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
 <script>
-(function () {
-    const wrapper     = document.getElementById('js-wrapper');
-    const canvas      = document.getElementById('scratch-canvas');
-    const ctx         = canvas.getContext('2d');
-    const instruction = document.getElementById('js-instruction');
-    const resultEl    = document.querySelector('.scratch-result');
+(function(){
+  const TOTAL_HITS   = 5;   // จำนวนครั้งที่ต้องทุบทั้งหมด
+  const COOLDOWN_SEC = 5;   // วินาทีรอระหว่างทุบ
 
-    let isDrawing = false;
-    let revealed  = false;
+  const btn       = document.getElementById('hitBtn');
+  const scene     = document.getElementById('eggScene');
+  const countdown = document.getElementById('countdown');
+  const reveal    = document.getElementById('eggReveal');
+  const eggBody   = document.getElementById('eggBody');
+  const progress  = document.getElementById('progress');
 
-    /* ─── 1. ตั้งค่า canvas ให้ตรงกับขนาด wrapper จริงๆ ─── */
-    function resizeCanvas() {
-        const W = wrapper.offsetWidth;
-        const H = wrapper.offsetHeight;
-        canvas.width  = W;
-        canvas.height = H;
-        if (!revealed) drawGoldLayer(W, H);
+  let hits      = 0;
+  let waiting   = false;
+  let cdTimer   = null;
+
+  // สร้าง progress dots
+  for(let i = 0; i < TOTAL_HITS; i++){
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = 'dot'+i;
+    progress.appendChild(d);
+  }
+
+  function updateDot(i){
+    const d = document.getElementById('dot'+i);
+    if(d) d.classList.add(i === TOTAL_HITS-1 ? 'last' : 'hit');
+  }
+
+  function showCrack(n){
+    const el = document.getElementById('crack'+n);
+    if(el) el.classList.add('visible');
+  }
+
+  function startCooldown(){
+    waiting = true;
+    btn.disabled = true;
+    let sec = COOLDOWN_SEC;
+    countdown.innerHTML = `รออีก <span>${sec}</span> วิ...`;
+    cdTimer = setInterval(()=>{
+      sec--;
+      if(sec <= 0){
+        clearInterval(cdTimer);
+        waiting = false;
+        btn.disabled = false;
+        countdown.innerHTML = '';
+        btn.querySelector('.hammer').style.animation = '';
+      } else {
+        countdown.innerHTML = `รออีก <span>${sec}</span> วิ...`;
+      }
+    }, 1000);
+  }
+
+  function shatterEgg(){
+    // ซ่อนเปลือกไข่หลัก
+    eggBody.style.transition = 'opacity 0.5s';
+    eggBody.style.opacity = '0';
+
+    // แสดงเศษเปลือก แล้วกระเด็น
+    const shards = document.querySelectorAll('.shard');
+    shards.forEach((s, i) => {
+      s.style.opacity = '1';
+      const angle = (i / shards.length) * Math.PI * 2;
+      const dist  = 60 + Math.random() * 40;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      s.style.transition = `transform 0.7s cubic-bezier(0.2,0.8,0.4,1), opacity 0.7s 0.3s`;
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          s.style.transform = `translate(${dx}px, ${dy}px) rotate(${Math.random()*180}deg)`;
+          s.style.opacity = '0';
+        });
+      });
+    });
+
+    // ซ่อนรอยร้าวทั้งหมด
+    document.querySelectorAll('.crack').forEach(c => {
+      c.style.transition = 'opacity 0.3s';
+      c.style.opacity = '0';
+    });
+
+    // เผยคำตอบ
+    setTimeout(()=>{
+      reveal.classList.add('show');
+      fireConfetti();
+      countdown.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
+      countdown.style.color = '#007bff';
+      countdown.style.fontWeight = '700';
+    }, 600);
+  }
+
+  function fireConfetti(){
+    const end = Date.now() + 4000;
+    (function frame(){
+      if(Date.now() > end) return;
+      const t = (end - Date.now()) / 4000;
+      confetti({ particleCount: Math.round(35*t), spread: 80, startVelocity: 32,
+        origin: {x:0.2, y:0.65}, colors:['#007bff','#87ceeb','#fff','#d4af37'] });
+      confetti({ particleCount: Math.round(35*t), spread: 80, startVelocity: 32,
+        origin: {x:0.8, y:0.65}, colors:['#007bff','#e0f7fa','#fff','#ffe97d'] });
+      requestAnimationFrame(frame);
+    })();
+  }
+
+  btn.addEventListener('click', ()=>{
+    if(waiting || hits >= TOTAL_HITS) return;
+
+    hits++;
+    updateDot(hits-1);
+
+    // Shake ไข่
+    scene.classList.remove('shaking');
+    void scene.offsetWidth; // reflow
+    scene.classList.add('shaking');
+    scene.addEventListener('animationend', ()=> scene.classList.remove('shaking'), {once:true});
+
+    if(hits < TOTAL_HITS){
+      // แสดงรอยร้าวตามลำดับ
+      showCrack(hits);
+
+      // อัปเดต button label
+      const left = TOTAL_HITS - hits;
+      btn.querySelector('.hammer').textContent = '🔨';
+      btn.childNodes[1].textContent = ` ทุบอีก ${left} ครั้ง!`;
+
+      startCooldown();
+    } else {
+      // ครั้งสุดท้าย — แตกสนิท!
+      btn.disabled = true;
+      btn.style.display = 'none';
+      shatterEgg();
     }
-
-    /* ─── 2. วาดชั้นสีทอง ─── */
-    function drawGoldLayer(W, H) {
-        const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.85);
-        grad.addColorStop(0,   '#ffe97d');
-        grad.addColorStop(0.5, '#d4af37');
-        grad.addColorStop(1,   '#a67c00');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, W, H);
-
-        // จุดประกาย
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        for (let i = 0; i < 300; i++) {
-            ctx.beginPath();
-            ctx.arc(Math.random()*W, Math.random()*H, Math.random()*2.2, 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        // ข้อความ
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-        ctx.font = `700 ${Math.round(W * 0.08)}px Kanit, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('ขูดตรงนี้ 🎁', W/2, H/2);
-    }
-
-    /* ─── 3. หาพิกัดบน canvas จาก event ─── */
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        // scaleX/Y แก้กรณี CSS size ≠ canvas pixel size (ไม่ควรเกิดแต่ safety)
-        const scaleX = canvas.width  / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const src = e.touches ? e.touches[0] : e;
-        return {
-            x: (src.clientX - rect.left) * scaleX,
-            y: (src.clientY - rect.top)  * scaleY
-        };
-    }
-
-    /* ─── 4. ขูด ─── */
-    function doScratch(e) {
-        if (!isDrawing || revealed) return;
-        e.preventDefault();
-
-        const { x, y } = getPos(e);
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath();
-        ctx.arc(x, y, 28, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalCompositeOperation = 'source-over';
-
-        checkReveal();
-    }
-
-    /* ─── 5. เช็คว่าขูดพอหรือยัง ─── */
-    function checkReveal() {
-        if (revealed) return;
-
-        const data    = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        const total   = data.length / 4;          // จำนวน pixel ทั้งหมด
-        let   cleared = 0;
-
-        // สุ่มตรวจทุก 4 pixel เพื่อ performance
-        for (let i = 3; i < data.length; i += 4 * 4) {
-            if (data[i] < 10) cleared++;           // alpha ≈ 0 = ถูกขูดไปแล้ว
-        }
-
-        // ถ้าขูดไป 40% ขึ้นไป → เผย
-        if (cleared / (total / 4) >= 0.40) {
-            revealAnswer();
-        }
-    }
-
-    /* ─── 6. เผยคำตอบ ─── */
-    function revealAnswer() {
-        if (revealed) return;
-        revealed = true;
-
-        // เผยชั้นเฉลยก่อน แล้วค่อย fade canvas ออก
-        resultEl.classList.add('visible');
-        setTimeout(() => {
-            canvas.style.opacity = '0';
-            canvas.style.pointerEvents = 'none';
-        }, 200);
-
-        instruction.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
-        instruction.style.animation = 'none';
-        instruction.style.color = '#007bff';
-        instruction.style.fontWeight = '700';
-
-        // Confetti 🎉
-        const end  = Date.now() + 4500;
-        const tick = setInterval(() => {
-            if (Date.now() > end) return clearInterval(tick);
-            const t = (end - Date.now()) / 4500;
-            confetti({ particleCount: Math.round(40 * t), spread: 80, startVelocity: 35,
-                origin: { x: 0.2, y: 0.6 }, colors: ['#007bff','#87ceeb','#ffffff','#d4af37'] });
-            confetti({ particleCount: Math.round(40 * t), spread: 80, startVelocity: 35,
-                origin: { x: 0.8, y: 0.6 }, colors: ['#007bff','#e0f7fa','#ffffff','#ffe97d'] });
-        }, 300);
-    }
-
-    /* ─── 7. Event Listeners ─── */
-    // Mouse
-    canvas.addEventListener('mousedown',  (e) => { isDrawing = true;  doScratch(e); });
-    window.addEventListener('mousemove',  doScratch);
-    window.addEventListener('mouseup',    () => { isDrawing = false; });
-
-    // Touch
-    canvas.addEventListener('touchstart', (e) => { isDrawing = true;  doScratch(e); }, { passive: false });
-    canvas.addEventListener('touchmove',  doScratch,                                   { passive: false });
-    canvas.addEventListener('touchend',   () => { isDrawing = false; });
-
-    /* ─── 8. Init ─── */
-    resizeCanvas();
-    // ถ้า window resize ให้วาดใหม่ (rare บน mobile)
-    window.addEventListener('resize', resizeCanvas);
+  });
 })();
 </script>
-
 </body>
 </html>
