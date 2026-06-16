@@ -26,8 +26,7 @@
     padding: 32px 28px 28px;
     text-align: center;
     box-shadow: 0 16px 40px #0002;
-    max-width: 380px;
-    width: 92vw;
+    max-width: 380px; width: 92vw;
   }
   h1 { font-size: 1.8rem; color: #444; margin-bottom: 4px; }
   .subtitle { font-size: 1rem; color: #888; margin-bottom: 22px; }
@@ -43,9 +42,10 @@
   .dot {
     width: 13px; height: 13px; border-radius: 50%;
     border: 2px solid #ccc; background: #eee;
-    transition: background .4s, border-color .4s;
+    transition: background .3s, border-color .3s;
   }
-  .dot.done { background: #f9c84a; border-color: #d4af37; }
+  .dot.pink { background: #ff69b4; border-color: #c0408a; }
+  .dot.blue { background: #3399ff; border-color: #0066cc; }
 
   .hit-btn {
     display: inline-flex; align-items: center; gap: 10px;
@@ -61,10 +61,6 @@
   .hit-btn:active:not(:disabled) { transform: scale(0.94); }
   .hit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .hammer { display: inline-block; font-size: 1.4rem; }
-  @keyframes swing {
-    0%{transform:rotate(0)} 30%{transform:rotate(-35deg)} 70%{transform:rotate(15deg)} 100%{transform:rotate(0)}
-  }
-  .hit-btn:not(:disabled):hover .hammer { animation: swing .4s ease; }
 
   @keyframes shake {
     0%,100%{transform:translate(0,0) rotate(0)}
@@ -80,21 +76,28 @@
     font-size: 1rem; color: #888;
   }
   .info span { color: #d4af37; font-weight: 700; font-size: 1.1rem; }
+
+  /* flash overlay สำหรับครั้งที่ 5 */
+  #flashOverlay {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 999;
+    opacity: 0;
+  }
 </style>
 </head>
 <body>
 <div class="card">
   <h1>🥚 ลุ้นเพศลูกน้อย!</h1>
-  <p class="subtitle">ทุบไข่ให้แตก แล้วจะรู้ว่าเป็นใคร</p>
+  <p class="subtitle">ทุบไข่แล้วจะรู้ว่าเป็นใคร!</p>
 
   <div class="dots" id="dots"></div>
 
   <div class="egg-wrap" id="eggWrap">
-    <!-- ล่าง: ชมพู (หลอก) -->
-    <canvas id="cPink"  width="220" height="260"></canvas>
-    <!-- กลาง: เฉลยจริง (ซ่อนไว้จนครั้งสุดท้าย) -->
-    <canvas id="cReveal" width="220" height="260" style="opacity:0;transition:opacity 0.6s"></canvas>
-    <!-- บน: เปลือกไข่ -->
+    <!-- ชั้นล่าง: สีไข่ (สลับชมพู/ฟ้า) -->
+    <canvas id="cColor" width="220" height="260"></canvas>
+    <!-- ชั้นกลาง: เฉลยจริง (ซ่อนจนสุดท้าย) -->
+    <canvas id="cReveal" width="220" height="260" style="opacity:0;transition:opacity 0.5s"></canvas>
+    <!-- ชั้นบน: เปลือกไข่ -->
     <canvas id="cShell" width="220" height="260"></canvas>
   </div>
 
@@ -104,29 +107,35 @@
   <div class="info" id="info"></div>
 </div>
 
+<div id="flashOverlay"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
 (function(){
   const TOTAL = 5;
   const WAIT  = 5;
 
-  const wrap    = document.getElementById('eggWrap');
-  const cPink   = document.getElementById('cPink');
-  const cReveal = document.getElementById('cReveal');
-  const cShell  = document.getElementById('cShell');
-  const pCtx    = cPink.getContext('2d');
-  const revCtx  = cReveal.getContext('2d');
-  const sCtx    = cShell.getContext('2d');
-  const btn     = document.getElementById('hitBtn');
-  const label   = document.getElementById('btnLabel');
-  const infoEl  = document.getElementById('info');
-  const dotsEl  = document.getElementById('dots');
+  const wrap     = document.getElementById('eggWrap');
+  const cColor   = document.getElementById('cColor');
+  const cReveal  = document.getElementById('cReveal');
+  const cShell   = document.getElementById('cShell');
+  const colCtx   = cColor.getContext('2d');
+  const revCtx   = cReveal.getContext('2d');
+  const sCtx     = cShell.getContext('2d');
+  const btn      = document.getElementById('hitBtn');
+  const label    = document.getElementById('btnLabel');
+  const infoEl   = document.getElementById('info');
+  const dotsEl   = document.getElementById('dots');
+  const flash    = document.getElementById('flashOverlay');
 
   const W=220, H=260, CX=110, CY=135, RX=85, RY=108;
 
   let hits   = 0;
   let waiting= false;
   let peeled = [];
+
+  // สีตาม hit: 1=ชมพู, 2=ฟ้า, 3=ชมพู, 4=ฟ้า
+  const HIT_COLORS = [null, 'pink', 'blue', 'pink', 'blue'];
 
   // dots
   for(let i=0;i<TOTAL;i++){
@@ -141,84 +150,84 @@
     ctx.clip();
   }
 
-  /* ── ชั้น 1: สีชมพู (หลอก) ── */
-  function drawPink(){
-    pCtx.clearRect(0,0,W,H);
-    pCtx.save();
-    eggClip(pCtx);
-    const g=pCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
-    g.addColorStop(0,'#ffb3d9');
-    g.addColorStop(1,'#ff69b4');
-    pCtx.fillStyle=g;
-    pCtx.fill();
-    // แต้มหัวใจเล็กๆ ให้ดูหญิงขึ้น
-    pCtx.font='22px serif';
-    pCtx.textAlign='center';
-    pCtx.textBaseline='middle';
-    const hearts=['💕','🎀','💗','💖','✨'];
-    const pos=[
-      [CX,CY],[CX-28,CY-35],[CX+30,CY-20],
-      [CX-22,CY+38],[CX+25,CY+42]
-    ];
-    pos.forEach((p,i)=>pCtx.fillText(hearts[i],p[0],p[1]));
-    pCtx.restore();
+  /* ── วาดสีพื้นไข่ (ชมพูหรือฟ้า) ── */
+  function drawColor(color){
+    colCtx.clearRect(0,0,W,H);
+    colCtx.save();
+    eggClip(colCtx);
+
+    let g;
+    if(color === 'pink'){
+      g = colCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+      g.addColorStop(0,'#ffb3d9');
+      g.addColorStop(1,'#ff69b4');
+      colCtx.fillStyle = g;
+      colCtx.fill();
+      colCtx.font='22px serif';
+      colCtx.textAlign='center'; colCtx.textBaseline='middle';
+      ['💕','🎀','💗','💖','✨'].forEach((e,i)=>{
+        const pos=[[CX,CY],[CX-28,CY-35],[CX+30,CY-20],[CX-22,CY+38],[CX+25,CY+42]];
+        colCtx.fillText(e,pos[i][0],pos[i][1]);
+      });
+    } else if(color === 'blue'){
+      g = colCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+      g.addColorStop(0,'#80d0ff');
+      g.addColorStop(1,'#1a8cff');
+      colCtx.fillStyle = g;
+      colCtx.fill();
+      colCtx.font='22px serif';
+      colCtx.textAlign='center'; colCtx.textBaseline='middle';
+      ['⭐','🌟','💙','🔵','✨'].forEach((e,i)=>{
+        const pos=[[CX,CY],[CX-28,CY-35],[CX+30,CY-20],[CX-22,CY+38],[CX+25,CY+42]];
+        colCtx.fillText(e,pos[i][0],pos[i][1]);
+      });
+    }
+    colCtx.restore();
+
     // ขอบ
-    pCtx.beginPath();
-    pCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
-    pCtx.strokeStyle='#c06090';
-    pCtx.lineWidth=3;
-    pCtx.stroke();
+    colCtx.beginPath();
+    colCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    colCtx.strokeStyle = color==='pink' ? '#c06090' : '#0055cc';
+    colCtx.lineWidth=3;
+    colCtx.stroke();
   }
 
-  /* ── ชั้น 2: เฉลยจริง (ฟ้า ลูกชาย) ── */
+  /* ── เฉลยจริง (ฟ้าเข้ม ลูกชาย) ── */
   function drawReveal(){
     revCtx.clearRect(0,0,W,H);
     revCtx.save();
     eggClip(revCtx);
     const g=revCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
-    g.addColorStop(0,'#6ec6ff');
-    g.addColorStop(1,'#007bff');
-    revCtx.fillStyle=g;
-    revCtx.fill();
+    g.addColorStop(0,'#6ec6ff'); g.addColorStop(1,'#007bff');
+    revCtx.fillStyle=g; revCtx.fill();
     revCtx.fillStyle='white';
-    revCtx.textAlign='center';
-    revCtx.textBaseline='middle';
-    revCtx.font='52px serif';
-    revCtx.fillText('👶🏻⚽',CX,CY-26);
-    revCtx.font='bold 28px Kanit,sans-serif';
-    revCtx.fillText('ลูกชาย!',CX,CY+26);
-    revCtx.font='15px Kanit,sans-serif';
-    revCtx.fillStyle='#cce8ff';
+    revCtx.textAlign='center'; revCtx.textBaseline='middle';
+    revCtx.font='52px serif'; revCtx.fillText('👶🏻⚽',CX,CY-26);
+    revCtx.font='bold 28px Kanit,sans-serif'; revCtx.fillText('ลูกชาย!',CX,CY+26);
+    revCtx.font='15px Kanit,sans-serif'; revCtx.fillStyle='#cce8ff';
     revCtx.fillText('คุณปู่คุณย่าเตรียมรับขวัญ',CX,CY+58);
     revCtx.restore();
     revCtx.beginPath();
     revCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
-    revCtx.strokeStyle='#0050aa';
-    revCtx.lineWidth=3;
-    revCtx.stroke();
+    revCtx.strokeStyle='#0050aa'; revCtx.lineWidth=3; revCtx.stroke();
   }
 
-  /* ── ชั้น 3: เปลือกไข่ (มีรู destination-out) ── */
+  /* ── เปลือกไข่ (มีรูที่กะเทาะ) ── */
   function drawShell(){
     sCtx.clearRect(0,0,W,H);
     sCtx.save();
     eggClip(sCtx);
     const sg=sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
-    sg.addColorStop(0,'#fff9ef');
-    sg.addColorStop(0.55,'#f5e6c8');
-    sg.addColorStop(1,'#d4a84b');
-    sCtx.fillStyle=sg;
-    sCtx.fill();
-    // sparkle
+    sg.addColorStop(0,'#fff9ef'); sg.addColorStop(0.55,'#f5e6c8'); sg.addColorStop(1,'#d4a84b');
+    sCtx.fillStyle=sg; sCtx.fill();
     sCtx.fillStyle='rgba(255,255,255,0.3)';
     for(let i=0;i<120;i++){
       sCtx.beginPath();
-      sCtx.arc(CX-RX+Math.random()*RX*2, CY-RY+Math.random()*RY*2, Math.random()*1.8,0,Math.PI*2);
+      sCtx.arc(CX-RX+Math.random()*RX*2,CY-RY+Math.random()*RY*2,Math.random()*1.8,0,Math.PI*2);
       sCtx.fill();
     }
     sCtx.restore();
 
-    // เจาะรู
     sCtx.globalCompositeOperation='destination-out';
     peeled.forEach(p=>{
       sCtx.beginPath();
@@ -227,27 +236,18 @@
     });
     sCtx.globalCompositeOperation='source-over';
 
-    // เส้นร้าว
     peeled.forEach(p=>{
       (p.cracks||[]).forEach(c=>{
-        sCtx.beginPath();
-        sCtx.moveTo(c.x1,c.y1);
-        sCtx.lineTo(c.x2,c.y2);
-        sCtx.strokeStyle='#8b5e1a';
-        sCtx.lineWidth=1.5;
-        sCtx.stroke();
+        sCtx.beginPath(); sCtx.moveTo(c.x1,c.y1); sCtx.lineTo(c.x2,c.y2);
+        sCtx.strokeStyle='#8b5e1a'; sCtx.lineWidth=1.5; sCtx.stroke();
       });
     });
 
-    // ขอบไข่
     sCtx.beginPath();
     sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
-    sCtx.strokeStyle='#a07840';
-    sCtx.lineWidth=3;
-    sCtx.stroke();
+    sCtx.strokeStyle='#a07840'; sCtx.lineWidth=3; sCtx.stroke();
   }
 
-  /* ── กำหนด zone ที่จะกะเทาะ ── */
   const ZONES=[
     {ax:CX,    ay:CY-55},
     {ax:CX+52, ay:CY-15},
@@ -258,15 +258,13 @@
 
   function makePatch(idx){
     const z=ZONES[idx];
-    const rx=30+Math.random()*16;
-    const ry=22+Math.random()*14;
+    const rx=30+Math.random()*16, ry=22+Math.random()*14;
     const angle=Math.random()*Math.PI;
     const cracks=[];
-    const nc=4+Math.floor(Math.random()*3);
-    for(let i=0;i<nc;i++){
+    for(let i=0;i<4+Math.floor(Math.random()*3);i++){
       const a=Math.random()*Math.PI*2;
       cracks.push({
-        x1:z.ax+Math.cos(a)*rx*0.85, y1:z.ay+Math.sin(a)*rx*0.85,
+        x1:z.ax+Math.cos(a)*rx*.85, y1:z.ay+Math.sin(a)*rx*.85,
         x2:z.ax+Math.cos(a)*(rx*1.5+Math.random()*18),
         y2:z.ay+Math.sin(a)*(rx*1.5+Math.random()*18),
       });
@@ -274,25 +272,21 @@
     return {x:z.ax,y:z.ay,rx,ry,angle,cracks};
   }
 
-  /* ── เศษกระเด็น ── */
   function spawnChips(count){
     const rect=cShell.getBoundingClientRect();
     const ex=rect.left+W/2, ey=rect.top+H/2;
     for(let i=0;i<count;i++){
       setTimeout(()=>{
         const chip=document.createElement('div');
-        const cw=12+Math.random()*18, ch=9+Math.random()*12;
-        chip.style.cssText=`position:fixed;width:${cw}px;height:${ch}px;
-          background:linear-gradient(135deg,#fff9ef,#e8c88a);
-          border:1px solid #c9a96e;border-radius:${2+Math.random()*5}px;
-          pointer-events:none;z-index:9999;
+        chip.style.cssText=`position:fixed;width:${12+Math.random()*18}px;height:${9+Math.random()*12}px;
+          background:linear-gradient(135deg,#fff9ef,#e8c88a);border:1px solid #c9a96e;
+          border-radius:${2+Math.random()*5}px;pointer-events:none;z-index:9999;
           left:${ex+(Math.random()-.5)*100}px;top:${ey+(Math.random()-.5)*70}px;`;
         document.body.appendChild(chip);
-        const vx=(Math.random()-.5)*14, vy=-(5+Math.random()*9);
-        const rot=(Math.random()-.5)*400;
+        const vx=(Math.random()-.5)*14, vy=-(5+Math.random()*9), rot=(Math.random()-.5)*400;
         let cy2=parseFloat(chip.style.top),cx2=parseFloat(chip.style.left),gy=0,t=0;
         (function fall(){
-          t++; gy+=0.65; cy2+=vy+gy; cx2+=vx;
+          t++; gy+=.65; cy2+=vy+gy; cx2+=vx;
           chip.style.top=cy2+'px'; chip.style.left=cx2+'px';
           chip.style.transform=`rotate(${rot*t*.05}deg)`;
           chip.style.opacity=t>28?Math.max(0,1-(t-28)/18):'1';
@@ -302,22 +296,31 @@
     }
   }
 
-  /* ── countdown ── */
+  /* ── ไฟกะพริบสลับสีครั้งที่ 5 ── */
+  function flashColors(cb){
+    const colors=['#ff69b4','#1a8cff','#ff69b4','#1a8cff','#ff69b4','#1a8cff','#ff69b4','#1a8cff'];
+    let i=0;
+    function next(){
+      if(i>=colors.length){ flash.style.opacity='0'; cb(); return; }
+      flash.style.background=colors[i];
+      flash.style.opacity='0.45';
+      i++;
+      setTimeout(()=>{ flash.style.opacity='0'; setTimeout(next,120); },220);
+    }
+    next();
+  }
+
   function startWait(){
     waiting=true; btn.disabled=true;
     let s=WAIT;
     infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
     const t=setInterval(()=>{
       s--;
-      if(s<=0){
-        clearInterval(t); waiting=false; btn.disabled=false; infoEl.innerHTML='';
-      } else {
-        infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
-      }
+      if(s<=0){ clearInterval(t); waiting=false; btn.disabled=false; infoEl.innerHTML=''; }
+      else infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
     },1000);
   }
 
-  /* ── confetti ── */
   function celebrate(){
     const end=Date.now()+4500;
     (function f(){
@@ -329,52 +332,60 @@
     })();
   }
 
-  /* ── ทุบ ── */
   btn.addEventListener('click',()=>{
     if(waiting||hits>=TOTAL) return;
 
-    // shake
     wrap.classList.remove('shaking');
     void wrap.offsetWidth;
     wrap.classList.add('shaking');
     wrap.addEventListener('animationend',()=>wrap.classList.remove('shaking'),{once:true});
 
-    document.getElementById('d'+hits).classList.add('done');
+    const hitIdx = hits; // 0-based
     hits++;
 
+    // dot
+    const dot = document.getElementById('d'+hitIdx);
     if(hits < TOTAL){
-      // กะเทาะเปลือก → เห็นชมพูข้างใน (หลอก!)
-      peeled.push(makePatch(hits-1));
+      dot.classList.add(HIT_COLORS[hits]); // สีของรอบนี้
+    } else {
+      dot.classList.add('blue');
+    }
+
+    if(hits < TOTAL){
+      // กะเทาะเปลือก + สลับสี
+      peeled.push(makePatch(hitIdx));
+      drawColor(HIT_COLORS[hits]); // สีใหม่หลังทุบ
       drawShell();
       spawnChips(5+Math.floor(Math.random()*5));
       label.textContent=` ทุบอีก ${TOTAL-hits} ครั้ง!`;
       startWait();
 
     } else {
-      // ครั้งสุดท้าย — เปิดเผยทั้งหมด!
-      // เจาะเปลือกออกทั้งหมด
+      // ครั้งสุดท้าย!
       peeled.push({x:CX,y:CY,rx:RX+10,ry:RY+10,angle:0,cracks:[]});
       drawShell();
       spawnChips(20);
+      btn.disabled=true;
+      label.textContent=' กำลังเฉลย...';
 
-      // สลับจากชมพู → ฟ้า
-      cPink.style.transition='opacity 0.5s';
-      cPink.style.opacity='0';
-      cReveal.style.opacity='1';
-
-      btn.style.display='none';
-      setTimeout(()=>{
-        infoEl.innerHTML='🎉 หลอกแล้ว! เป็นลูกชายครับ! 🎉';
-        infoEl.style.color='#007bff';
-        infoEl.style.fontWeight='700';
-        infoEl.style.fontSize='1.05rem';
-        celebrate();
-      },400);
+      // ไฟกะพริบก่อน แล้วเผย
+      flashColors(()=>{
+        cColor.style.transition='opacity 0.4s';
+        cColor.style.opacity='0';
+        cReveal.style.opacity='1';
+        btn.style.display='none';
+        setTimeout(()=>{
+          infoEl.innerHTML='🎉 เฉลยแล้ว! เป็นลูกชายครับ! 🎉';
+          infoEl.style.color='#007bff';
+          infoEl.style.fontWeight='700';
+          celebrate();
+        },400);
+      });
     }
   });
 
   /* ── init ── */
-  drawPink();
+  drawColor('pink'); // เริ่มด้วยชมพู (ก่อนทุบ)
   drawReveal();
   drawShell();
 
