@@ -6,370 +6,410 @@
 <title>Baby Egg Reveal</title>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --gold: #d4af37;
-    --bg: #fff8f0;
-    --font: 'Kanit', sans-serif;
-  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    background: #fff8f0;
     background-image:
       radial-gradient(#f9c84a33 1px, transparent 1px),
-      radial-gradient(#f9c84a22 1px, var(--bg) 1px);
+      radial-gradient(#f9c84a22 1px, #fff8f0 1px);
     background-size: 38px 38px;
     background-position: 0 0, 19px 19px;
-    font-family: var(--font);
+    font-family: 'Kanit', sans-serif;
     overflow: hidden;
   }
-
   .card {
     background: #ffffffee;
-    border: 4px solid var(--gold);
+    border: 4px solid #d4af37;
     border-radius: 28px;
-    padding: 36px 32px 32px;
+    padding: 32px 28px 28px;
     text-align: center;
     box-shadow: 0 16px 40px #0002;
     max-width: 380px;
     width: 92vw;
   }
+  h1 { font-size: 1.8rem; color: #444; margin-bottom: 4px; }
+  .subtitle { font-size: 1rem; color: #888; margin-bottom: 22px; }
 
-  h1 { font-size: 1.8rem; color: #444; margin-bottom: 6px; }
-  .subtitle { font-size: 1rem; color: #888; margin-bottom: 28px; }
-
-  /* ─── EGG SCENE ─── */
-  .egg-scene {
+  /* ── EGG CANVAS AREA ── */
+  .egg-wrap {
     position: relative;
     width: 220px;
     height: 260px;
-    margin: 0 auto 28px;
+    margin: 0 auto 24px;
   }
+  canvas { position: absolute; top: 0; left: 0; }
 
-  /* ชั้นเนื้อหา (ซ่อนไว้ก่อน) */
-  .egg-reveal {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    pointer-events: none;
-  }
-  .egg-reveal.show { opacity: 1; }
-  .reveal-icon { font-size: 64px; }
-  .reveal-name { font-size: 2rem; font-weight: 700; color: #007bff; margin-top: 4px; }
-  .reveal-sub  { font-size: 0.9rem; color: #555; margin-top: 2px; }
-
-  /* SVG ไข่ */
-  .egg-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* ─── CRACK PATHS — เริ่มล่องหน ─── */
-  .crack {
-    stroke: #5a3e1b;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    fill: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-  .crack.visible { opacity: 1; }
-
-  /* ─── SHATTER PIECES (ซ่อนไว้จนแตกสนิท) ─── */
-  .shard {
-    opacity: 0;
-    transition: opacity 0.1s;
-  }
-
-  /* ─── BUTTON ─── */
-  .hit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 36px;
-    font-family: var(--font);
-    font-size: 1.2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #f9c84a, #d4af37);
-    color: #5a3e1b;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 6px 18px #d4af3755;
-    transition: transform 0.1s, box-shadow 0.1s, opacity 0.3s;
-    user-select: none;
-  }
-  .hit-btn:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 2px 8px #d4af3744; }
-  .hit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .hammer { font-size: 1.5rem; display: inline-block; }
-  .hit-btn:not(:disabled):hover .hammer { animation: swing 0.4s ease; }
-  @keyframes swing {
-    0%   { transform: rotate(0deg); }
-    30%  { transform: rotate(-30deg); }
-    70%  { transform: rotate(15deg); }
-    100% { transform: rotate(0deg); }
-  }
-
-  /* shake ไข่เมื่อทุบ */
-  @keyframes shake {
-    0%,100% { transform: translate(0,0) rotate(0deg); }
-    15%  { transform: translate(-6px,-3px) rotate(-3deg); }
-    30%  { transform: translate(6px,-5px) rotate(3deg); }
-    45%  { transform: translate(-4px,2px) rotate(-2deg); }
-    60%  { transform: translate(4px,4px) rotate(2deg); }
-    75%  { transform: translate(-2px,-2px) rotate(-1deg); }
-  }
-  .egg-scene.shaking { animation: shake 0.45s ease; }
-
-  /* ─── COUNTDOWN ─── */
-  .countdown {
-    height: 28px;
-    margin-top: 14px;
-    font-size: 1rem;
-    color: #888;
-    transition: opacity 0.3s;
-  }
-  .countdown span { color: var(--gold); font-weight: 700; font-size: 1.2rem; }
-
-  /* ─── PROGRESS DOTS ─── */
-  .progress {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 22px;
+  /* ── PROGRESS DOTS ── */
+  .dots {
+    display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
   }
   .dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    background: #eee;
-    transition: background 0.4s, border-color 0.4s;
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid #ccc; background: #eee;
+    transition: background .4s, border-color .4s;
   }
-  .dot.hit  { background: #f9c84a; border-color: #d4af37; }
-  .dot.last { background: #ff6b6b; border-color: #cc3333; }
+  .dot.done { background: #f9c84a; border-color: #d4af37; }
+
+  /* ── BUTTON ── */
+  .hit-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 13px 34px;
+    font-family: 'Kanit', sans-serif; font-size: 1.15rem; font-weight: 700;
+    background: linear-gradient(135deg, #f9c84a, #d4af37);
+    color: #5a3e1b;
+    border: none; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 6px 18px #d4af3755;
+    transition: transform .1s, box-shadow .1s, opacity .3s;
+    user-select: none;
+  }
+  .hit-btn:active:not(:disabled) { transform: scale(0.94); }
+  .hit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .hammer { display: inline-block; font-size: 1.4rem; }
+  @keyframes swing {
+    0%{transform:rotate(0)} 30%{transform:rotate(-35deg)} 70%{transform:rotate(15deg)} 100%{transform:rotate(0)}
+  }
+  .hit-btn:not(:disabled):hover .hammer { animation: swing .4s ease; }
+
+  @keyframes shake {
+    0%,100%{transform:translate(0,0) rotate(0)}
+    20%{transform:translate(-7px,-4px) rotate(-3deg)}
+    40%{transform:translate(7px,-6px) rotate(3deg)}
+    60%{transform:translate(-4px,3px) rotate(-2deg)}
+    80%{transform:translate(4px,4px) rotate(2deg)}
+  }
+  .egg-wrap.shaking { animation: shake .45s ease; }
+
+  .info {
+    height: 28px; margin-top: 12px;
+    font-size: 1rem; color: #888;
+  }
+  .info span { color: #d4af37; font-weight: 700; font-size: 1.1rem; }
 </style>
 </head>
 <body>
 <div class="card">
   <h1>🥚 ลุ้นเพศลูกน้อย!</h1>
-  <p class="subtitle">ทุบไข่ให้แตก แล้วจะรู้ว่าเป็นใคร</p>
+  <p class="subtitle">ทุบไข่ให้แตกทีละนิด แล้วจะรู้ว่าเป็นใคร</p>
 
-  <!-- progress dots -->
-  <div class="progress" id="progress"></div>
+  <div class="dots" id="dots"></div>
 
-  <!-- egg scene -->
-  <div class="egg-scene" id="eggScene">
-
-    <!-- เนื้อหาใต้ไข่ -->
-    <div class="egg-reveal" id="eggReveal">
-      <div class="reveal-icon">👶🏻⚽</div>
-      <div class="reveal-name">ลูกชาย!</div>
-      <div class="reveal-sub">คุณปู่คุณย่าเตรียมรับขวัญนะครับ</div>
-    </div>
-
-    <!-- SVG ไข่ + รอยร้าว -->
-    <svg class="egg-svg" viewBox="0 0 220 260" id="eggSvg">
-      <defs>
-        <radialGradient id="eggGrad" cx="40%" cy="35%">
-          <stop offset="0%"   stop-color="#fff9ef"/>
-          <stop offset="60%"  stop-color="#f5e6c8"/>
-          <stop offset="100%" stop-color="#e8c88a"/>
-        </radialGradient>
-      </defs>
-
-      <!-- ตัวไข่ -->
-      <ellipse id="eggBody" cx="110" cy="138" rx="88" ry="110"
-               fill="url(#eggGrad)" stroke="#d4b07a" stroke-width="2.5"/>
-
-      <!-- รอยร้าว (ทยอยเปิด) -->
-      <!-- crack 1 -->
-      <g class="crack" id="crack1">
-        <polyline points="110,70 104,85 115,95 108,110"/>
-      </g>
-      <!-- crack 2 -->
-      <g class="crack" id="crack2">
-        <polyline points="150,100 142,112 155,122 148,138"/>
-        <polyline points="70,110  80,120  68,132"/>
-      </g>
-      <!-- crack 3 -->
-      <g class="crack" id="crack3">
-        <polyline points="125,150 118,165 130,175 120,190"/>
-        <polyline points="90,145  98,158  85,170  95,180"/>
-        <polyline points="160,140 168,155 158,165"/>
-      </g>
-      <!-- crack 4 (pre-final) -->
-      <g class="crack" id="crack4">
-        <polyline points="110,70  100,60  92,75  85,65"/>
-        <polyline points="110,70  118,58  128,70 136,60"/>
-        <polyline points="50,155  60,165  48,178  58,188"/>
-        <polyline points="170,155 162,168 172,180"/>
-      </g>
-
-      <!-- เศษเปลือก (แสดงตอนแตกสนิท) -->
-      <g id="shards">
-        <polygon class="shard" id="s1" points="60,80  110,65  85,110" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s2" points="110,65 160,80  135,105" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s3" points="38,130  70,110  60,160" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s4" points="180,130 148,110 162,165" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s5" points="55,200  90,180  75,230" fill="#f0d8a8" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s6" points="165,200 130,185 148,235" fill="#eedcb2" stroke="#c9a96e" stroke-width="1.5"/>
-        <polygon class="shard" id="s7" points="95,245  125,245 110,210" fill="#f5e6c8" stroke="#c9a96e" stroke-width="1.5"/>
-      </g>
-    </svg>
+  <div class="egg-wrap" id="eggWrap">
+    <!-- canvas ล่าง: วาดเนื้อหาใต้เปลือก -->
+    <canvas id="cReveal" width="220" height="260"></canvas>
+    <!-- canvas บน: เปลือกไข่ที่จะค่อยๆหลุด -->
+    <canvas id="cShell"  width="220" height="260"></canvas>
   </div>
 
   <button class="hit-btn" id="hitBtn">
-    <span class="hammer">🔨</span> ทุบไข่!
+    <span class="hammer">🔨</span><span id="btnLabel"> ทุบไข่!</span>
   </button>
-  <div class="countdown" id="countdown"></div>
+  <div class="info" id="info"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
 (function(){
-  const TOTAL_HITS   = 5;   // จำนวนครั้งที่ต้องทุบทั้งหมด
-  const COOLDOWN_SEC = 5;   // วินาทีรอระหว่างทุบ
+  const TOTAL   = 5;
+  const WAIT    = 5;
 
-  const btn       = document.getElementById('hitBtn');
-  const scene     = document.getElementById('eggScene');
-  const countdown = document.getElementById('countdown');
-  const reveal    = document.getElementById('eggReveal');
-  const eggBody   = document.getElementById('eggBody');
-  const progress  = document.getElementById('progress');
+  const wrap    = document.getElementById('eggWrap');
+  const cRev    = document.getElementById('cReveal');
+  const cShell  = document.getElementById('cShell');
+  const rCtx    = cRev.getContext('2d');
+  const sCtx    = cShell.getContext('2d');
+  const btn     = document.getElementById('hitBtn');
+  const label   = document.getElementById('btnLabel');
+  const infoEl  = document.getElementById('info');
+  const dotsEl  = document.getElementById('dots');
 
-  let hits      = 0;
-  let waiting   = false;
-  let cdTimer   = null;
+  const W = 220, H = 260;
+  const CX = 110, CY = 135, RX = 85, RY = 108;
 
-  // สร้าง progress dots
-  for(let i = 0; i < TOTAL_HITS; i++){
-    const d = document.createElement('div');
-    d.className = 'dot';
-    d.id = 'dot'+i;
-    progress.appendChild(d);
+  let hits    = 0;
+  let waiting = false;
+  let peeled  = []; // เก็บบริเวณที่กะเทาะไปแล้ว (วงกลม)
+
+  /* ── สร้าง dots ── */
+  for(let i=0;i<TOTAL;i++){
+    const d=document.createElement('div');
+    d.className='dot'; d.id='d'+i;
+    dotsEl.appendChild(d);
   }
 
-  function updateDot(i){
-    const d = document.getElementById('dot'+i);
-    if(d) d.classList.add(i === TOTAL_HITS-1 ? 'last' : 'hit');
+  /* ── path ของรูปทรงไข่ ── */
+  function eggPath(ctx){
+    ctx.beginPath();
+    ctx.ellipse(CX, CY, RX, RY, 0, 0, Math.PI*2);
   }
 
-  function showCrack(n){
-    const el = document.getElementById('crack'+n);
-    if(el) el.classList.add('visible');
+  /* ── วาด canvas เนื้อหา (ล่าง) ── */
+  function drawReveal(){
+    rCtx.clearRect(0,0,W,H);
+
+    // พื้นหลังสีฟ้า (ผลลัพธ์)
+    rCtx.save();
+    eggPath(rCtx);
+    rCtx.clip();
+    const g = rCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+    g.addColorStop(0,'#6ec6ff');
+    g.addColorStop(1,'#007bff');
+    rCtx.fillStyle = g;
+    rCtx.fill();
+
+    // ข้อความ
+    rCtx.fillStyle='white';
+    rCtx.textAlign='center';
+    rCtx.textBaseline='middle';
+    rCtx.font='bold 52px serif';
+    rCtx.fillText('👶🏻⚽', CX, CY-28);
+    rCtx.font='bold 30px Kanit,sans-serif';
+    rCtx.fillText('ลูกชาย!', CX, CY+28);
+    rCtx.font='16px Kanit,sans-serif';
+    rCtx.fillStyle='#e0f0ff';
+    rCtx.fillText('คุณปู่คุณย่าเตรียมรับขวัญ', CX, CY+62);
+    rCtx.restore();
+
+    // ขอบไข่
+    rCtx.save();
+    eggPath(rCtx);
+    rCtx.strokeStyle='#a07840';
+    rCtx.lineWidth=3;
+    rCtx.stroke();
+    rCtx.restore();
   }
 
-  function startCooldown(){
-    waiting = true;
-    btn.disabled = true;
-    let sec = COOLDOWN_SEC;
-    countdown.innerHTML = `รออีก <span>${sec}</span> วิ...`;
-    cdTimer = setInterval(()=>{
-      sec--;
-      if(sec <= 0){
-        clearInterval(cdTimer);
-        waiting = false;
-        btn.disabled = false;
-        countdown.innerHTML = '';
-        btn.querySelector('.hammer').style.animation = '';
-      } else {
-        countdown.innerHTML = `รออีก <span>${sec}</span> วิ...`;
-      }
-    }, 1000);
-  }
+  /* ── วาดเปลือกไข่เต็มๆ แล้ว "เจาะ" รูตรงบริเวณที่กะเทาะออก ── */
+  function drawShell(){
+    sCtx.clearRect(0,0,W,H);
 
-  function shatterEgg(){
-    // ซ่อนเปลือกไข่หลัก
-    eggBody.style.transition = 'opacity 0.5s';
-    eggBody.style.opacity = '0';
+    // วาดเปลือกเต็ม
+    sCtx.save();
+    eggPath(sCtx);
+    sCtx.clip();
 
-    // แสดงเศษเปลือก แล้วกระเด็น
-    const shards = document.querySelectorAll('.shard');
-    shards.forEach((s, i) => {
-      s.style.opacity = '1';
-      const angle = (i / shards.length) * Math.PI * 2;
-      const dist  = 60 + Math.random() * 40;
-      const dx = Math.cos(angle) * dist;
-      const dy = Math.sin(angle) * dist;
-      s.style.transition = `transform 0.7s cubic-bezier(0.2,0.8,0.4,1), opacity 0.7s 0.3s`;
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-          s.style.transform = `translate(${dx}px, ${dy}px) rotate(${Math.random()*180}deg)`;
-          s.style.opacity = '0';
-        });
+    const sg = sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
+    sg.addColorStop(0,'#fff9ef');
+    sg.addColorStop(0.55,'#f5e6c8');
+    sg.addColorStop(1,'#d4a84b');
+    sCtx.fillStyle=sg;
+    sCtx.fill();
+
+    // จุดประกายบนเปลือก
+    sCtx.fillStyle='rgba(255,255,255,0.35)';
+    for(let i=0;i<120;i++){
+      const px=CX-RX+Math.random()*RX*2;
+      const py=CY-RY+Math.random()*RY*2;
+      sCtx.beginPath();
+      sCtx.arc(px,py,Math.random()*1.8,0,Math.PI*2);
+      sCtx.fill();
+    }
+    sCtx.restore();
+
+    // เจาะรูด้วย destination-out (ลบ pixel ตรงที่กะเทาะ)
+    sCtx.globalCompositeOperation='destination-out';
+    peeled.forEach(p=>{
+      sCtx.beginPath();
+      // รูปร่าง "แผ่นที่หลุด" = กลุ่มวงรีที่ไม่สม่ำเสมอ
+      sCtx.ellipse(p.x, p.y, p.rx, p.ry, p.angle, 0, Math.PI*2);
+      sCtx.fill();
+    });
+    sCtx.globalCompositeOperation='source-over';
+
+    // วาดขอบรอยแตกรอบๆ รู
+    sCtx.save();
+    peeled.forEach(p=>{
+      // เส้นร้าวรอบรู
+      const cracks = p.cracks || [];
+      cracks.forEach(c=>{
+        sCtx.beginPath();
+        sCtx.moveTo(c.x1,c.y1);
+        sCtx.lineTo(c.x2,c.y2);
+        sCtx.strokeStyle='#8b5e1a';
+        sCtx.lineWidth=1.5;
+        sCtx.stroke();
       });
     });
+    sCtx.restore();
 
-    // ซ่อนรอยร้าวทั้งหมด
-    document.querySelectorAll('.crack').forEach(c => {
-      c.style.transition = 'opacity 0.3s';
-      c.style.opacity = '0';
-    });
-
-    // เผยคำตอบ
-    setTimeout(()=>{
-      reveal.classList.add('show');
-      fireConfetti();
-      countdown.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
-      countdown.style.color = '#007bff';
-      countdown.style.fontWeight = '700';
-    }, 600);
+    // วาดขอบไข่ทับอีกที
+    sCtx.save();
+    eggPath(sCtx);
+    sCtx.strokeStyle='#a07840';
+    sCtx.lineWidth=3;
+    sCtx.stroke();
+    sCtx.restore();
   }
 
-  function fireConfetti(){
-    const end = Date.now() + 4000;
-    (function frame(){
-      if(Date.now() > end) return;
-      const t = (end - Date.now()) / 4000;
-      confetti({ particleCount: Math.round(35*t), spread: 80, startVelocity: 32,
-        origin: {x:0.2, y:0.65}, colors:['#007bff','#87ceeb','#fff','#d4af37'] });
-      confetti({ particleCount: Math.round(35*t), spread: 80, startVelocity: 32,
-        origin: {x:0.8, y:0.65}, colors:['#007bff','#e0f7fa','#fff','#ffe97d'] });
-      requestAnimationFrame(frame);
+  /* ── สร้างชิ้นเปลือกที่หลุด (จุดสุ่มในไข่แต่กระจายทุกรอบ) ── */
+  function makePeelPatch(hitIndex){
+    // แบ่งไข่เป็น zone ตาม hitIndex เพื่อให้กระจาย
+    const zones=[
+      {ax:CX,    ay:CY-55},  // บน
+      {ax:CX+50, ay:CY-20},  // ขวาบน
+      {ax:CX-50, ay:CY-20},  // ซ้ายบน
+      {ax:CX+45, ay:CY+45},  // ขวาล่าง
+      {ax:CX-45, ay:CY+45},  // ซ้ายล่าง
+    ];
+    const z = zones[hitIndex % zones.length];
+
+    // สร้างรูที่ไม่เป็นวงกลมสมบูรณ์
+    const rx = 32 + Math.random()*18;
+    const ry = 24 + Math.random()*16;
+    const angle = Math.random()*Math.PI;
+
+    // เส้นร้าวรอบๆ
+    const cracks=[];
+    const nc = 4 + Math.floor(Math.random()*4);
+    for(let i=0;i<nc;i++){
+      const a = Math.random()*Math.PI*2;
+      const r1 = rx*0.9;
+      const r2 = rx*1.6 + Math.random()*20;
+      cracks.push({
+        x1: z.ax + Math.cos(a)*r1,
+        y1: z.ay + Math.sin(a)*r1,
+        x2: z.ax + Math.cos(a)*r2,
+        y2: z.ay + Math.sin(a)*r2,
+      });
+    }
+
+    return { x:z.ax, y:z.ay, rx, ry, angle, cracks };
+  }
+
+  /* ── เศษเปลือกกระเด็น ── */
+  function spawnChip(px, py){
+    const chip = document.createElement('div');
+    chip.style.cssText=`
+      position:fixed;
+      width:${14+Math.random()*18}px;
+      height:${10+Math.random()*12}px;
+      background:linear-gradient(135deg,#fff9ef,#e8c88a);
+      border:1px solid #c9a96e;
+      border-radius:${2+Math.random()*6}px;
+      pointer-events:none;
+      z-index:999;
+      left:${px}px; top:${py}px;
+      transform-origin:center;
+    `;
+    document.body.appendChild(chip);
+
+    const vx = (Math.random()-0.5)*12;
+    const vy = -(4+Math.random()*8);
+    const rot = (Math.random()-0.5)*360;
+    let y=py, x=px, gy=0, t=0;
+
+    function fall(){
+      t++;
+      gy+=0.6;
+      y+=vy+gy;
+      x+=vx;
+      chip.style.top=y+'px';
+      chip.style.left=x+'px';
+      chip.style.transform=`rotate(${rot*t*0.05}deg)`;
+      chip.style.opacity= t>30 ? Math.max(0,1-(t-30)/20) : '1';
+      if(t<60) requestAnimationFrame(fall);
+      else chip.remove();
+    }
+    requestAnimationFrame(fall);
+  }
+
+  /* ── countdown ── */
+  function startWait(cb){
+    waiting=true; btn.disabled=true;
+    let s=WAIT;
+    infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
+    const t=setInterval(()=>{
+      s--;
+      if(s<=0){ clearInterval(t); waiting=false; btn.disabled=false; infoEl.innerHTML=''; cb && cb(); }
+      else infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
+    },1000);
+  }
+
+  /* ── confetti ── */
+  function celebrate(){
+    const end=Date.now()+4200;
+    (function f(){
+      if(Date.now()>end)return;
+      const tt=(end-Date.now())/4200;
+      confetti({particleCount:Math.round(40*tt),spread:75,startVelocity:30,origin:{x:.2,y:.65},colors:['#007bff','#87ceeb','#fff','#d4af37']});
+      confetti({particleCount:Math.round(40*tt),spread:75,startVelocity:30,origin:{x:.8,y:.65},colors:['#007bff','#e0f7fa','#fff','#ffe97d']});
+      requestAnimationFrame(f);
     })();
   }
 
-  btn.addEventListener('click', ()=>{
-    if(waiting || hits >= TOTAL_HITS) return;
+  /* ── ทุบ ── */
+  btn.addEventListener('click',()=>{
+    if(waiting||hits>=TOTAL) return;
+
+    // หา pixel position ของไข่บนหน้าจอ (สำหรับ spawn chip)
+    const rect = cShell.getBoundingClientRect();
+    const eggScreenX = rect.left + W/2;
+    const eggScreenY = rect.top  + H/2;
 
     hits++;
-    updateDot(hits-1);
+    document.getElementById('d'+(hits-1)).classList.add('done');
 
-    // Shake ไข่
-    scene.classList.remove('shaking');
-    void scene.offsetWidth; // reflow
-    scene.classList.add('shaking');
-    scene.addEventListener('animationend', ()=> scene.classList.remove('shaking'), {once:true});
+    // shake
+    wrap.classList.remove('shaking');
+    void wrap.offsetWidth;
+    wrap.classList.add('shaking');
+    wrap.addEventListener('animationend',()=>wrap.classList.remove('shaking'),{once:true});
 
-    if(hits < TOTAL_HITS){
-      // แสดงรอยร้าวตามลำดับ
-      showCrack(hits);
+    if(hits < TOTAL){
+      // กะเทาะเปลือก
+      const patch = makePeelPatch(hits-1);
+      peeled.push(patch);
+      drawShell();
 
-      // อัปเดต button label
-      const left = TOTAL_HITS - hits;
-      btn.querySelector('.hammer').textContent = '🔨';
-      btn.childNodes[1].textContent = ` ทุบอีก ${left} ครั้ง!`;
+      // spawn เศษกระเด็น
+      for(let i=0;i<5+Math.floor(Math.random()*5);i++){
+        setTimeout(()=>{
+          spawnChip(
+            eggScreenX + (Math.random()-0.5)*80,
+            eggScreenY + (Math.random()-0.5)*60
+          );
+        }, i*60);
+      }
 
-      startCooldown();
+      const left=TOTAL-hits;
+      label.textContent=` ทุบอีก ${left} ครั้ง!`;
+      startWait(null);
+
     } else {
-      // ครั้งสุดท้าย — แตกสนิท!
-      btn.disabled = true;
-      btn.style.display = 'none';
-      shatterEgg();
+      // ครั้งสุดท้าย — เปลือกหลุดหมด
+      // กะเทาะส่วนที่เหลือทั้งหมด
+      const lastPatches=[
+        {x:CX,    ay:CY+70},
+        {x:CX+30, ay:CY+10},
+        {x:CX-30, ay:CY+10},
+      ];
+      // เพิ่มรูใหญ่กลางไข่ให้เปลือกหายหมด
+      peeled.push({x:CX,y:CY,rx:RX+5,ry:RY+5,angle:0,cracks:[]});
+      drawShell();
+
+      // เศษกระเด็นเยอะขึ้น
+      for(let i=0;i<18;i++){
+        setTimeout(()=>{
+          spawnChip(
+            eggScreenX + (Math.random()-0.5)*120,
+            eggScreenY + (Math.random()-0.5)*90
+          );
+        }, i*45);
+      }
+
+      btn.style.display='none';
+      infoEl.innerHTML='✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
+      infoEl.style.color='#007bff';
+      infoEl.style.fontWeight='700';
+      celebrate();
     }
   });
+
+  /* ── init ── */
+  drawReveal();
+  drawShell();
+
 })();
 </script>
 </body>
