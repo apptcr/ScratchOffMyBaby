@@ -77,7 +77,6 @@
   }
   .info span { color: #d4af37; font-weight: 700; font-size: 1.1rem; }
 
-  /* flash overlay สำหรับครั้งที่ 5 */
   #flashOverlay {
     position: fixed; inset: 0;
     pointer-events: none; z-index: 999;
@@ -93,11 +92,8 @@
   <div class="dots" id="dots"></div>
 
   <div class="egg-wrap" id="eggWrap">
-    <!-- ชั้นล่าง: สีไข่ (สลับชมพู/ฟ้า) -->
     <canvas id="cColor" width="220" height="260"></canvas>
-    <!-- ชั้นกลาง: เฉลยจริง (ซ่อนจนสุดท้าย) -->
     <canvas id="cReveal" width="220" height="260" style="opacity:0;transition:opacity 0.5s"></canvas>
-    <!-- ชั้นบน: เปลือกไข่ -->
     <canvas id="cShell" width="220" height="260"></canvas>
   </div>
 
@@ -132,9 +128,9 @@
 
   let hits   = 0;
   let waiting= false;
-  let peeled = [];
+  let peeled = [];       // รูกะเทาะ (polygon points)
+  let allCracks = [];    // รอยร้าวทั้งหมด
 
-  // สีตาม hit: 1=ชมพู, 2=ฟ้า, 3=ชมพู, 4=ฟ้า
   const HIT_COLORS = [null, 'pink', 'blue', 'pink', 'blue'];
 
   // dots
@@ -150,49 +146,39 @@
     ctx.clip();
   }
 
-  /* ── วาดสีพื้นไข่ (ชมพูหรือฟ้า) ── */
+  /* ── วาดสีพื้นไข่ ── */
   function drawColor(color){
     colCtx.clearRect(0,0,W,H);
     colCtx.save();
     eggClip(colCtx);
-
     let g;
     if(color === 'pink'){
       g = colCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
-      g.addColorStop(0,'#ffb3d9');
-      g.addColorStop(1,'#ff69b4');
-      colCtx.fillStyle = g;
-      colCtx.fill();
-      colCtx.font='22px serif';
-      colCtx.textAlign='center'; colCtx.textBaseline='middle';
+      g.addColorStop(0,'#ffb3d9'); g.addColorStop(1,'#ff69b4');
+      colCtx.fillStyle = g; colCtx.fill();
+      colCtx.font='22px serif'; colCtx.textAlign='center'; colCtx.textBaseline='middle';
       ['💕','🎀','💗','💖','✨'].forEach((e,i)=>{
         const pos=[[CX,CY],[CX-28,CY-35],[CX+30,CY-20],[CX-22,CY+38],[CX+25,CY+42]];
         colCtx.fillText(e,pos[i][0],pos[i][1]);
       });
     } else if(color === 'blue'){
       g = colCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
-      g.addColorStop(0,'#80d0ff');
-      g.addColorStop(1,'#1a8cff');
-      colCtx.fillStyle = g;
-      colCtx.fill();
-      colCtx.font='22px serif';
-      colCtx.textAlign='center'; colCtx.textBaseline='middle';
+      g.addColorStop(0,'#80d0ff'); g.addColorStop(1,'#1a8cff');
+      colCtx.fillStyle = g; colCtx.fill();
+      colCtx.font='22px serif'; colCtx.textAlign='center'; colCtx.textBaseline='middle';
       ['⭐','🌟','💙','🔵','✨'].forEach((e,i)=>{
         const pos=[[CX,CY],[CX-28,CY-35],[CX+30,CY-20],[CX-22,CY+38],[CX+25,CY+42]];
         colCtx.fillText(e,pos[i][0],pos[i][1]);
       });
     }
     colCtx.restore();
-
-    // ขอบ
     colCtx.beginPath();
     colCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
     colCtx.strokeStyle = color==='pink' ? '#c06090' : '#0055cc';
-    colCtx.lineWidth=3;
-    colCtx.stroke();
+    colCtx.lineWidth=3; colCtx.stroke();
   }
 
-  /* ── เฉลยจริง (ฟ้าเข้ม ลูกชาย) ── */
+  /* ── เฉลยจริง ── */
   function drawReveal(){
     revCtx.clearRect(0,0,W,H);
     revCtx.save();
@@ -212,15 +198,92 @@
     revCtx.strokeStyle='#0050aa'; revCtx.lineWidth=3; revCtx.stroke();
   }
 
-  /* ── เปลือกไข่ (มีรูที่กะเทาะ) ── */
+  /* ── สร้าง polygon รูปร่างขรุขระสำหรับรูกะเทาะ ── */
+  function makeJaggedHole(cx, cy, baseR, points) {
+    const pts = [];
+    for (let i = 0; i < points; i++) {
+      const angle = (i / points) * Math.PI * 2 - Math.PI / 2;
+      // สลับรัศมียาวสั้นแบบสุ่ม เพื่อให้ขอบขรุขระ
+      const jitter = 0.45 + Math.random() * 0.65;
+      const r = baseR * jitter;
+      // บิดแกน x/y ต่างกันเพื่อไม่ให้กลม
+      const stretch = 0.7 + Math.random() * 0.6;
+      pts.push({
+        x: cx + Math.cos(angle) * r * stretch,
+        y: cy + Math.sin(angle) * r * (2 - stretch)
+      });
+    }
+    return pts;
+  }
+
+  /* ── สร้างรอยร้าวแบบฟ้าผ่า (recursive lightning) ── */
+  function makeLightningCrack(x1, y1, x2, y2, depth) {
+    const lines = [];
+    if (depth === 0) {
+      lines.push({ x1, y1, x2, y2 });
+      return lines;
+    }
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * 14;
+    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * 14;
+    lines.push(...makeLightningCrack(x1, y1, mx, my, depth - 1));
+    lines.push(...makeLightningCrack(mx, my, x2, y2, depth - 1));
+    // แตกแขนง
+    if (Math.random() > 0.45) {
+      const bx = mx + (Math.random() - 0.5) * 22;
+      const by = my + (Math.random() - 0.5) * 22;
+      lines.push(...makeLightningCrack(mx, my, bx, by, depth - 1));
+    }
+    return lines;
+  }
+
+  /* ── สร้าง patch (รูกะเทาะ + รอยร้าว) ── */
+  const ZONES=[
+    {ax:CX,    ay:CY-62},
+    {ax:CX+55, ay:CY-18},
+    {ax:CX-55, ay:CY-18},
+    {ax:CX+46, ay:CY+52},
+    {ax:CX-46, ay:CY+52},
+  ];
+
+  function makePatch(idx){
+    const z = ZONES[idx];
+    const baseR = 28 + Math.random() * 14;
+    const numPts = 14 + Math.floor(Math.random() * 6); // จุดมากขึ้น = ขรุขระมากขึ้น
+    const poly = makeJaggedHole(z.ax, z.ay, baseR, numPts);
+
+    // สร้างรอยร้าวออกจากรู
+    const cracks = [];
+    const numCracks = 4 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < numCracks; i++) {
+      const angle = (i / numCracks) * Math.PI * 2 + Math.random() * 0.5;
+      const startR = baseR * 0.8;
+      const endR   = baseR * (1.8 + Math.random() * 1.4);
+      const sx = z.ax + Math.cos(angle) * startR;
+      const sy = z.ay + Math.sin(angle) * startR;
+      const ex = z.ax + Math.cos(angle) * endR;
+      const ey = z.ay + Math.sin(angle) * endR;
+      cracks.push(...makeLightningCrack(sx, sy, ex, ey, 2));
+    }
+
+    return { poly, cracks, cx: z.ax, cy: z.ay };
+  }
+
+  /* ── วาดเปลือกไข่ ── */
   function drawShell(){
     sCtx.clearRect(0,0,W,H);
     sCtx.save();
     eggClip(sCtx);
-    const sg=sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
-    sg.addColorStop(0,'#fff9ef'); sg.addColorStop(0.55,'#f5e6c8'); sg.addColorStop(1,'#d4a84b');
-    sCtx.fillStyle=sg; sCtx.fill();
-    sCtx.fillStyle='rgba(255,255,255,0.3)';
+
+    // พื้นเปลือก
+    const sg = sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
+    sg.addColorStop(0,'#fff9ef');
+    sg.addColorStop(0.55,'#f5e6c8');
+    sg.addColorStop(1,'#d4a84b');
+    sCtx.fillStyle = sg;
+    sCtx.fill();
+
+    // เนื้อสัมผัสจุดเล็กๆ
+    sCtx.fillStyle='rgba(255,255,255,0.28)';
     for(let i=0;i<120;i++){
       sCtx.beginPath();
       sCtx.arc(CX-RX+Math.random()*RX*2,CY-RY+Math.random()*RY*2,Math.random()*1.8,0,Math.PI*2);
@@ -228,65 +291,72 @@
     }
     sCtx.restore();
 
+    // เจาะรูด้วย polygon ขรุขระ
     sCtx.globalCompositeOperation='destination-out';
-    peeled.forEach(p=>{
+    peeled.forEach(p => {
+      if (!p.poly) return;
       sCtx.beginPath();
-      sCtx.ellipse(p.x,p.y,p.rx,p.ry,p.angle,0,Math.PI*2);
+      sCtx.moveTo(p.poly[0].x, p.poly[0].y);
+      for (let i = 1; i < p.poly.length; i++) {
+        // ใช้ quadratic curve เพื่อให้ขอบโค้งนิดๆ ไม่แข็งกระด้าง
+        const prev = p.poly[i-1];
+        const cur  = p.poly[i];
+        const mx   = (prev.x + cur.x) / 2;
+        const my   = (prev.y + cur.y) / 2;
+        sCtx.quadraticCurveTo(prev.x, prev.y, mx, my);
+      }
+      sCtx.closePath();
       sCtx.fill();
     });
+    // รูสุดท้าย (ครั้งที่ 5) เจาะทั้งหมด
+    if (hits >= TOTAL) {
+      sCtx.beginPath();
+      sCtx.ellipse(CX,CY,RX+12,RY+12,0,0,Math.PI*2);
+      sCtx.fill();
+    }
     sCtx.globalCompositeOperation='source-over';
 
-    peeled.forEach(p=>{
-      (p.cracks||[]).forEach(c=>{
-        sCtx.beginPath(); sCtx.moveTo(c.x1,c.y1); sCtx.lineTo(c.x2,c.y2);
-        sCtx.strokeStyle='#8b5e1a'; sCtx.lineWidth=1.5; sCtx.stroke();
-      });
+    // วาดรอยร้าว
+    allCracks.forEach(c => {
+      sCtx.beginPath();
+      sCtx.moveTo(c.x1, c.y1);
+      sCtx.lineTo(c.x2, c.y2);
+      sCtx.strokeStyle = 'rgba(100,65,20,0.75)';
+      sCtx.lineWidth = 1.2;
+      sCtx.lineCap = 'round';
+      sCtx.stroke();
     });
 
+    // ขอบ
     sCtx.beginPath();
     sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
-    sCtx.strokeStyle='#a07840'; sCtx.lineWidth=3; sCtx.stroke();
+    sCtx.strokeStyle='#a07840';
+    sCtx.lineWidth=3;
+    sCtx.stroke();
   }
 
-  const ZONES=[
-    {ax:CX,    ay:CY-55},
-    {ax:CX+52, ay:CY-15},
-    {ax:CX-52, ay:CY-15},
-    {ax:CX+44, ay:CY+50},
-    {ax:CX-44, ay:CY+50},
-  ];
-
-  function makePatch(idx){
-    const z=ZONES[idx];
-    const rx=30+Math.random()*16, ry=22+Math.random()*14;
-    const angle=Math.random()*Math.PI;
-    const cracks=[];
-    for(let i=0;i<4+Math.floor(Math.random()*3);i++){
-      const a=Math.random()*Math.PI*2;
-      cracks.push({
-        x1:z.ax+Math.cos(a)*rx*.85, y1:z.ay+Math.sin(a)*rx*.85,
-        x2:z.ax+Math.cos(a)*(rx*1.5+Math.random()*18),
-        y2:z.ay+Math.sin(a)*(rx*1.5+Math.random()*18),
-      });
-    }
-    return {x:z.ax,y:z.ay,rx,ry,angle,cracks};
-  }
-
+  /* ── เศษเปลือกกระเด็น ── */
   function spawnChips(count){
     const rect=cShell.getBoundingClientRect();
     const ex=rect.left+W/2, ey=rect.top+H/2;
     for(let i=0;i<count;i++){
       setTimeout(()=>{
         const chip=document.createElement('div');
-        chip.style.cssText=`position:fixed;width:${12+Math.random()*18}px;height:${9+Math.random()*12}px;
-          background:linear-gradient(135deg,#fff9ef,#e8c88a);border:1px solid #c9a96e;
-          border-radius:${2+Math.random()*5}px;pointer-events:none;z-index:9999;
-          left:${ex+(Math.random()-.5)*100}px;top:${ey+(Math.random()-.5)*70}px;`;
+        // ทำให้ชิ้นเปลือกเป็นรูปร่างสุ่ม (ไม่ใช่สี่เหลี่ยม)
+        const w = 8+Math.random()*16, h = 6+Math.random()*10;
+        const br = `${Math.random()*4}px ${Math.random()*8}px ${Math.random()*4}px ${Math.random()*8}px`;
+        chip.style.cssText=`position:fixed;width:${w}px;height:${h}px;
+          background:linear-gradient(135deg,#fff9ef,#e8c88a);
+          border:1px solid #c9a96e;
+          border-radius:${br};
+          pointer-events:none;z-index:9999;
+          left:${ex+(Math.random()-.5)*120}px;
+          top:${ey+(Math.random()-.5)*80}px;`;
         document.body.appendChild(chip);
-        const vx=(Math.random()-.5)*14, vy=-(5+Math.random()*9), rot=(Math.random()-.5)*400;
+        const vx=(Math.random()-.5)*16, vy=-(5+Math.random()*10), rot=(Math.random()-.5)*500;
         let cy2=parseFloat(chip.style.top),cx2=parseFloat(chip.style.left),gy=0,t=0;
         (function fall(){
-          t++; gy+=.65; cy2+=vy+gy; cx2+=vx;
+          t++; gy+=.68; cy2+=vy+gy; cx2+=vx;
           chip.style.top=cy2+'px'; chip.style.left=cx2+'px';
           chip.style.transform=`rotate(${rot*t*.05}deg)`;
           chip.style.opacity=t>28?Math.max(0,1-(t-28)/18):'1';
@@ -296,7 +366,7 @@
     }
   }
 
-  /* ── ไฟกะพริบสลับสีครั้งที่ 5 ── */
+  /* ── ไฟกะพริบครั้งสุดท้าย ── */
   function flashColors(cb){
     const colors=['#ff69b4','#1a8cff','#ff69b4','#1a8cff','#ff69b4','#1a8cff','#ff69b4','#1a8cff'];
     let i=0;
@@ -340,35 +410,33 @@
     wrap.classList.add('shaking');
     wrap.addEventListener('animationend',()=>wrap.classList.remove('shaking'),{once:true});
 
-    const hitIdx = hits; // 0-based
+    const hitIdx = hits;
     hits++;
 
-    // dot
     const dot = document.getElementById('d'+hitIdx);
     if(hits < TOTAL){
-      dot.classList.add(HIT_COLORS[hits]); // สีของรอบนี้
+      dot.classList.add(HIT_COLORS[hits]);
     } else {
       dot.classList.add('blue');
     }
 
     if(hits < TOTAL){
-      // กะเทาะเปลือก + สลับสี
-      peeled.push(makePatch(hitIdx));
-      drawColor(HIT_COLORS[hits]); // สีใหม่หลังทุบ
+      const patch = makePatch(hitIdx);
+      peeled.push(patch);
+      allCracks.push(...patch.cracks);
+      drawColor(HIT_COLORS[hits]);
       drawShell();
       spawnChips(5+Math.floor(Math.random()*5));
       label.textContent=` ทุบอีก ${TOTAL-hits} ครั้ง!`;
       startWait();
 
     } else {
-      // ครั้งสุดท้าย!
-      peeled.push({x:CX,y:CY,rx:RX+10,ry:RY+10,angle:0,cracks:[]});
-      drawShell();
+      // ครั้งสุดท้าย
       spawnChips(20);
+      drawShell(); // วาดก่อนเพื่อให้แอนิเมชันเห็นรอยแตก
       btn.disabled=true;
       label.textContent=' กำลังเฉลย...';
 
-      // ไฟกะพริบก่อน แล้วเผย
       flashColors(()=>{
         cColor.style.transition='opacity 0.4s';
         cColor.style.opacity='0';
@@ -385,7 +453,7 @@
   });
 
   /* ── init ── */
-  drawColor('pink'); // เริ่มด้วยชมพู (ก่อนทุบ)
+  drawColor('pink');
   drawReveal();
   drawShell();
 
