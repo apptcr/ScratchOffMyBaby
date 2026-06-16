@@ -32,19 +32,14 @@
   h1 { font-size: 1.8rem; color: #444; margin-bottom: 4px; }
   .subtitle { font-size: 1rem; color: #888; margin-bottom: 22px; }
 
-  /* ── EGG CANVAS AREA ── */
   .egg-wrap {
     position: relative;
-    width: 220px;
-    height: 260px;
+    width: 220px; height: 260px;
     margin: 0 auto 24px;
   }
   canvas { position: absolute; top: 0; left: 0; }
 
-  /* ── PROGRESS DOTS ── */
-  .dots {
-    display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
-  }
+  .dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
   .dot {
     width: 13px; height: 13px; border-radius: 50%;
     border: 2px solid #ccc; background: #eee;
@@ -52,7 +47,6 @@
   }
   .dot.done { background: #f9c84a; border-color: #d4af37; }
 
-  /* ── BUTTON ── */
   .hit-btn {
     display: inline-flex; align-items: center; gap: 10px;
     padding: 13px 34px;
@@ -61,7 +55,7 @@
     color: #5a3e1b;
     border: none; border-radius: 50px; cursor: pointer;
     box-shadow: 0 6px 18px #d4af3755;
-    transition: transform .1s, box-shadow .1s, opacity .3s;
+    transition: transform .1s, opacity .3s;
     user-select: none;
   }
   .hit-btn:active:not(:disabled) { transform: scale(0.94); }
@@ -82,7 +76,7 @@
   .egg-wrap.shaking { animation: shake .45s ease; }
 
   .info {
-    height: 28px; margin-top: 12px;
+    height: 30px; margin-top: 12px;
     font-size: 1rem; color: #888;
   }
   .info span { color: #d4af37; font-weight: 700; font-size: 1.1rem; }
@@ -91,15 +85,17 @@
 <body>
 <div class="card">
   <h1>🥚 ลุ้นเพศลูกน้อย!</h1>
-  <p class="subtitle">ทุบไข่ให้แตกทีละนิด แล้วจะรู้ว่าเป็นใคร</p>
+  <p class="subtitle">ทุบไข่ให้แตก แล้วจะรู้ว่าเป็นใคร</p>
 
   <div class="dots" id="dots"></div>
 
   <div class="egg-wrap" id="eggWrap">
-    <!-- canvas ล่าง: วาดเนื้อหาใต้เปลือก -->
-    <canvas id="cReveal" width="220" height="260"></canvas>
-    <!-- canvas บน: เปลือกไข่ที่จะค่อยๆหลุด -->
-    <canvas id="cShell"  width="220" height="260"></canvas>
+    <!-- ล่าง: ชมพู (หลอก) -->
+    <canvas id="cPink"  width="220" height="260"></canvas>
+    <!-- กลาง: เฉลยจริง (ซ่อนไว้จนครั้งสุดท้าย) -->
+    <canvas id="cReveal" width="220" height="260" style="opacity:0;transition:opacity 0.6s"></canvas>
+    <!-- บน: เปลือกไข่ -->
+    <canvas id="cShell" width="220" height="260"></canvas>
   </div>
 
   <button class="hit-btn" id="hitBtn">
@@ -111,118 +107,129 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
 (function(){
-  const TOTAL   = 5;
-  const WAIT    = 5;
+  const TOTAL = 5;
+  const WAIT  = 5;
 
   const wrap    = document.getElementById('eggWrap');
-  const cRev    = document.getElementById('cReveal');
+  const cPink   = document.getElementById('cPink');
+  const cReveal = document.getElementById('cReveal');
   const cShell  = document.getElementById('cShell');
-  const rCtx    = cRev.getContext('2d');
+  const pCtx    = cPink.getContext('2d');
+  const revCtx  = cReveal.getContext('2d');
   const sCtx    = cShell.getContext('2d');
   const btn     = document.getElementById('hitBtn');
   const label   = document.getElementById('btnLabel');
   const infoEl  = document.getElementById('info');
   const dotsEl  = document.getElementById('dots');
 
-  const W = 220, H = 260;
-  const CX = 110, CY = 135, RX = 85, RY = 108;
+  const W=220, H=260, CX=110, CY=135, RX=85, RY=108;
 
-  let hits    = 0;
-  let waiting = false;
-  let peeled  = []; // เก็บบริเวณที่กะเทาะไปแล้ว (วงกลม)
+  let hits   = 0;
+  let waiting= false;
+  let peeled = [];
 
-  /* ── สร้าง dots ── */
+  // dots
   for(let i=0;i<TOTAL;i++){
     const d=document.createElement('div');
     d.className='dot'; d.id='d'+i;
     dotsEl.appendChild(d);
   }
 
-  /* ── path ของรูปทรงไข่ ── */
-  function eggPath(ctx){
+  function eggClip(ctx){
     ctx.beginPath();
-    ctx.ellipse(CX, CY, RX, RY, 0, 0, Math.PI*2);
+    ctx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    ctx.clip();
   }
 
-  /* ── วาด canvas เนื้อหา (ล่าง) ── */
-  function drawReveal(){
-    rCtx.clearRect(0,0,W,H);
+  /* ── ชั้น 1: สีชมพู (หลอก) ── */
+  function drawPink(){
+    pCtx.clearRect(0,0,W,H);
+    pCtx.save();
+    eggClip(pCtx);
+    const g=pCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+    g.addColorStop(0,'#ffb3d9');
+    g.addColorStop(1,'#ff69b4');
+    pCtx.fillStyle=g;
+    pCtx.fill();
+    // แต้มหัวใจเล็กๆ ให้ดูหญิงขึ้น
+    pCtx.font='22px serif';
+    pCtx.textAlign='center';
+    pCtx.textBaseline='middle';
+    const hearts=['💕','🎀','💗','💖','✨'];
+    const pos=[
+      [CX,CY],[CX-28,CY-35],[CX+30,CY-20],
+      [CX-22,CY+38],[CX+25,CY+42]
+    ];
+    pos.forEach((p,i)=>pCtx.fillText(hearts[i],p[0],p[1]));
+    pCtx.restore();
+    // ขอบ
+    pCtx.beginPath();
+    pCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    pCtx.strokeStyle='#c06090';
+    pCtx.lineWidth=3;
+    pCtx.stroke();
+  }
 
-    // พื้นหลังสีฟ้า (ผลลัพธ์)
-    rCtx.save();
-    eggPath(rCtx);
-    rCtx.clip();
-    const g = rCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
+  /* ── ชั้น 2: เฉลยจริง (ฟ้า ลูกชาย) ── */
+  function drawReveal(){
+    revCtx.clearRect(0,0,W,H);
+    revCtx.save();
+    eggClip(revCtx);
+    const g=revCtx.createRadialGradient(CX-20,CY-30,10,CX,CY,RX);
     g.addColorStop(0,'#6ec6ff');
     g.addColorStop(1,'#007bff');
-    rCtx.fillStyle = g;
-    rCtx.fill();
-
-    // ข้อความ
-    rCtx.fillStyle='white';
-    rCtx.textAlign='center';
-    rCtx.textBaseline='middle';
-    rCtx.font='bold 52px serif';
-    rCtx.fillText('👶🏻⚽', CX, CY-28);
-    rCtx.font='bold 30px Kanit,sans-serif';
-    rCtx.fillText('ลูกชาย!', CX, CY+28);
-    rCtx.font='16px Kanit,sans-serif';
-    rCtx.fillStyle='#e0f0ff';
-    rCtx.fillText('คุณปู่คุณย่าเตรียมรับขวัญ', CX, CY+62);
-    rCtx.restore();
-
-    // ขอบไข่
-    rCtx.save();
-    eggPath(rCtx);
-    rCtx.strokeStyle='#a07840';
-    rCtx.lineWidth=3;
-    rCtx.stroke();
-    rCtx.restore();
+    revCtx.fillStyle=g;
+    revCtx.fill();
+    revCtx.fillStyle='white';
+    revCtx.textAlign='center';
+    revCtx.textBaseline='middle';
+    revCtx.font='52px serif';
+    revCtx.fillText('👶🏻⚽',CX,CY-26);
+    revCtx.font='bold 28px Kanit,sans-serif';
+    revCtx.fillText('ลูกชาย!',CX,CY+26);
+    revCtx.font='15px Kanit,sans-serif';
+    revCtx.fillStyle='#cce8ff';
+    revCtx.fillText('คุณปู่คุณย่าเตรียมรับขวัญ',CX,CY+58);
+    revCtx.restore();
+    revCtx.beginPath();
+    revCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    revCtx.strokeStyle='#0050aa';
+    revCtx.lineWidth=3;
+    revCtx.stroke();
   }
 
-  /* ── วาดเปลือกไข่เต็มๆ แล้ว "เจาะ" รูตรงบริเวณที่กะเทาะออก ── */
+  /* ── ชั้น 3: เปลือกไข่ (มีรู destination-out) ── */
   function drawShell(){
     sCtx.clearRect(0,0,W,H);
-
-    // วาดเปลือกเต็ม
     sCtx.save();
-    eggPath(sCtx);
-    sCtx.clip();
-
-    const sg = sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
+    eggClip(sCtx);
+    const sg=sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
     sg.addColorStop(0,'#fff9ef');
     sg.addColorStop(0.55,'#f5e6c8');
     sg.addColorStop(1,'#d4a84b');
     sCtx.fillStyle=sg;
     sCtx.fill();
-
-    // จุดประกายบนเปลือก
-    sCtx.fillStyle='rgba(255,255,255,0.35)';
+    // sparkle
+    sCtx.fillStyle='rgba(255,255,255,0.3)';
     for(let i=0;i<120;i++){
-      const px=CX-RX+Math.random()*RX*2;
-      const py=CY-RY+Math.random()*RY*2;
       sCtx.beginPath();
-      sCtx.arc(px,py,Math.random()*1.8,0,Math.PI*2);
+      sCtx.arc(CX-RX+Math.random()*RX*2, CY-RY+Math.random()*RY*2, Math.random()*1.8,0,Math.PI*2);
       sCtx.fill();
     }
     sCtx.restore();
 
-    // เจาะรูด้วย destination-out (ลบ pixel ตรงที่กะเทาะ)
+    // เจาะรู
     sCtx.globalCompositeOperation='destination-out';
     peeled.forEach(p=>{
       sCtx.beginPath();
-      // รูปร่าง "แผ่นที่หลุด" = กลุ่มวงรีที่ไม่สม่ำเสมอ
-      sCtx.ellipse(p.x, p.y, p.rx, p.ry, p.angle, 0, Math.PI*2);
+      sCtx.ellipse(p.x,p.y,p.rx,p.ry,p.angle,0,Math.PI*2);
       sCtx.fill();
     });
     sCtx.globalCompositeOperation='source-over';
 
-    // วาดขอบรอยแตกรอบๆ รู
-    sCtx.save();
+    // เส้นร้าว
     peeled.forEach(p=>{
-      // เส้นร้าวรอบรู
-      const cracks = p.cracks || [];
-      cracks.forEach(c=>{
+      (p.cracks||[]).forEach(c=>{
         sCtx.beginPath();
         sCtx.moveTo(c.x1,c.y1);
         sCtx.lineTo(c.x2,c.y2);
@@ -231,107 +238,91 @@
         sCtx.stroke();
       });
     });
-    sCtx.restore();
 
-    // วาดขอบไข่ทับอีกที
-    sCtx.save();
-    eggPath(sCtx);
+    // ขอบไข่
+    sCtx.beginPath();
+    sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
     sCtx.strokeStyle='#a07840';
     sCtx.lineWidth=3;
     sCtx.stroke();
-    sCtx.restore();
   }
 
-  /* ── สร้างชิ้นเปลือกที่หลุด (จุดสุ่มในไข่แต่กระจายทุกรอบ) ── */
-  function makePeelPatch(hitIndex){
-    // แบ่งไข่เป็น zone ตาม hitIndex เพื่อให้กระจาย
-    const zones=[
-      {ax:CX,    ay:CY-55},  // บน
-      {ax:CX+50, ay:CY-20},  // ขวาบน
-      {ax:CX-50, ay:CY-20},  // ซ้ายบน
-      {ax:CX+45, ay:CY+45},  // ขวาล่าง
-      {ax:CX-45, ay:CY+45},  // ซ้ายล่าง
-    ];
-    const z = zones[hitIndex % zones.length];
+  /* ── กำหนด zone ที่จะกะเทาะ ── */
+  const ZONES=[
+    {ax:CX,    ay:CY-55},
+    {ax:CX+52, ay:CY-15},
+    {ax:CX-52, ay:CY-15},
+    {ax:CX+44, ay:CY+50},
+    {ax:CX-44, ay:CY+50},
+  ];
 
-    // สร้างรูที่ไม่เป็นวงกลมสมบูรณ์
-    const rx = 32 + Math.random()*18;
-    const ry = 24 + Math.random()*16;
-    const angle = Math.random()*Math.PI;
-
-    // เส้นร้าวรอบๆ
+  function makePatch(idx){
+    const z=ZONES[idx];
+    const rx=30+Math.random()*16;
+    const ry=22+Math.random()*14;
+    const angle=Math.random()*Math.PI;
     const cracks=[];
-    const nc = 4 + Math.floor(Math.random()*4);
+    const nc=4+Math.floor(Math.random()*3);
     for(let i=0;i<nc;i++){
-      const a = Math.random()*Math.PI*2;
-      const r1 = rx*0.9;
-      const r2 = rx*1.6 + Math.random()*20;
+      const a=Math.random()*Math.PI*2;
       cracks.push({
-        x1: z.ax + Math.cos(a)*r1,
-        y1: z.ay + Math.sin(a)*r1,
-        x2: z.ax + Math.cos(a)*r2,
-        y2: z.ay + Math.sin(a)*r2,
+        x1:z.ax+Math.cos(a)*rx*0.85, y1:z.ay+Math.sin(a)*rx*0.85,
+        x2:z.ax+Math.cos(a)*(rx*1.5+Math.random()*18),
+        y2:z.ay+Math.sin(a)*(rx*1.5+Math.random()*18),
       });
     }
-
-    return { x:z.ax, y:z.ay, rx, ry, angle, cracks };
+    return {x:z.ax,y:z.ay,rx,ry,angle,cracks};
   }
 
-  /* ── เศษเปลือกกระเด็น ── */
-  function spawnChip(px, py){
-    const chip = document.createElement('div');
-    chip.style.cssText=`
-      position:fixed;
-      width:${14+Math.random()*18}px;
-      height:${10+Math.random()*12}px;
-      background:linear-gradient(135deg,#fff9ef,#e8c88a);
-      border:1px solid #c9a96e;
-      border-radius:${2+Math.random()*6}px;
-      pointer-events:none;
-      z-index:999;
-      left:${px}px; top:${py}px;
-      transform-origin:center;
-    `;
-    document.body.appendChild(chip);
-
-    const vx = (Math.random()-0.5)*12;
-    const vy = -(4+Math.random()*8);
-    const rot = (Math.random()-0.5)*360;
-    let y=py, x=px, gy=0, t=0;
-
-    function fall(){
-      t++;
-      gy+=0.6;
-      y+=vy+gy;
-      x+=vx;
-      chip.style.top=y+'px';
-      chip.style.left=x+'px';
-      chip.style.transform=`rotate(${rot*t*0.05}deg)`;
-      chip.style.opacity= t>30 ? Math.max(0,1-(t-30)/20) : '1';
-      if(t<60) requestAnimationFrame(fall);
-      else chip.remove();
+  /* ── เศษกระเด็น ── */
+  function spawnChips(count){
+    const rect=cShell.getBoundingClientRect();
+    const ex=rect.left+W/2, ey=rect.top+H/2;
+    for(let i=0;i<count;i++){
+      setTimeout(()=>{
+        const chip=document.createElement('div');
+        const cw=12+Math.random()*18, ch=9+Math.random()*12;
+        chip.style.cssText=`position:fixed;width:${cw}px;height:${ch}px;
+          background:linear-gradient(135deg,#fff9ef,#e8c88a);
+          border:1px solid #c9a96e;border-radius:${2+Math.random()*5}px;
+          pointer-events:none;z-index:9999;
+          left:${ex+(Math.random()-.5)*100}px;top:${ey+(Math.random()-.5)*70}px;`;
+        document.body.appendChild(chip);
+        const vx=(Math.random()-.5)*14, vy=-(5+Math.random()*9);
+        const rot=(Math.random()-.5)*400;
+        let cy2=parseFloat(chip.style.top),cx2=parseFloat(chip.style.left),gy=0,t=0;
+        (function fall(){
+          t++; gy+=0.65; cy2+=vy+gy; cx2+=vx;
+          chip.style.top=cy2+'px'; chip.style.left=cx2+'px';
+          chip.style.transform=`rotate(${rot*t*.05}deg)`;
+          chip.style.opacity=t>28?Math.max(0,1-(t-28)/18):'1';
+          if(t<55) requestAnimationFrame(fall); else chip.remove();
+        })();
+      },i*55);
     }
-    requestAnimationFrame(fall);
   }
 
   /* ── countdown ── */
-  function startWait(cb){
+  function startWait(){
     waiting=true; btn.disabled=true;
     let s=WAIT;
     infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
     const t=setInterval(()=>{
       s--;
-      if(s<=0){ clearInterval(t); waiting=false; btn.disabled=false; infoEl.innerHTML=''; cb && cb(); }
-      else infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
+      if(s<=0){
+        clearInterval(t); waiting=false; btn.disabled=false; infoEl.innerHTML='';
+      } else {
+        infoEl.innerHTML=`รออีก <span>${s}</span> วิ...`;
+      }
     },1000);
   }
 
   /* ── confetti ── */
   function celebrate(){
-    const end=Date.now()+4200;
+    const end=Date.now()+4500;
     (function f(){
       if(Date.now()>end)return;
-      const tt=(end-Date.now())/4200;
+      const tt=(end-Date.now())/4500;
       confetti({particleCount:Math.round(40*tt),spread:75,startVelocity:30,origin:{x:.2,y:.65},colors:['#007bff','#87ceeb','#fff','#d4af37']});
       confetti({particleCount:Math.round(40*tt),spread:75,startVelocity:30,origin:{x:.8,y:.65},colors:['#007bff','#e0f7fa','#fff','#ffe97d']});
       requestAnimationFrame(f);
@@ -342,71 +333,48 @@
   btn.addEventListener('click',()=>{
     if(waiting||hits>=TOTAL) return;
 
-    // หา pixel position ของไข่บนหน้าจอ (สำหรับ spawn chip)
-    const rect = cShell.getBoundingClientRect();
-    const eggScreenX = rect.left + W/2;
-    const eggScreenY = rect.top  + H/2;
-
-    hits++;
-    document.getElementById('d'+(hits-1)).classList.add('done');
-
     // shake
     wrap.classList.remove('shaking');
     void wrap.offsetWidth;
     wrap.classList.add('shaking');
     wrap.addEventListener('animationend',()=>wrap.classList.remove('shaking'),{once:true});
 
+    document.getElementById('d'+hits).classList.add('done');
+    hits++;
+
     if(hits < TOTAL){
-      // กะเทาะเปลือก
-      const patch = makePeelPatch(hits-1);
-      peeled.push(patch);
+      // กะเทาะเปลือก → เห็นชมพูข้างใน (หลอก!)
+      peeled.push(makePatch(hits-1));
       drawShell();
-
-      // spawn เศษกระเด็น
-      for(let i=0;i<5+Math.floor(Math.random()*5);i++){
-        setTimeout(()=>{
-          spawnChip(
-            eggScreenX + (Math.random()-0.5)*80,
-            eggScreenY + (Math.random()-0.5)*60
-          );
-        }, i*60);
-      }
-
-      const left=TOTAL-hits;
-      label.textContent=` ทุบอีก ${left} ครั้ง!`;
-      startWait(null);
+      spawnChips(5+Math.floor(Math.random()*5));
+      label.textContent=` ทุบอีก ${TOTAL-hits} ครั้ง!`;
+      startWait();
 
     } else {
-      // ครั้งสุดท้าย — เปลือกหลุดหมด
-      // กะเทาะส่วนที่เหลือทั้งหมด
-      const lastPatches=[
-        {x:CX,    ay:CY+70},
-        {x:CX+30, ay:CY+10},
-        {x:CX-30, ay:CY+10},
-      ];
-      // เพิ่มรูใหญ่กลางไข่ให้เปลือกหายหมด
-      peeled.push({x:CX,y:CY,rx:RX+5,ry:RY+5,angle:0,cracks:[]});
+      // ครั้งสุดท้าย — เปิดเผยทั้งหมด!
+      // เจาะเปลือกออกทั้งหมด
+      peeled.push({x:CX,y:CY,rx:RX+10,ry:RY+10,angle:0,cracks:[]});
       drawShell();
+      spawnChips(20);
 
-      // เศษกระเด็นเยอะขึ้น
-      for(let i=0;i<18;i++){
-        setTimeout(()=>{
-          spawnChip(
-            eggScreenX + (Math.random()-0.5)*120,
-            eggScreenY + (Math.random()-0.5)*90
-          );
-        }, i*45);
-      }
+      // สลับจากชมพู → ฟ้า
+      cPink.style.transition='opacity 0.5s';
+      cPink.style.opacity='0';
+      cReveal.style.opacity='1';
 
       btn.style.display='none';
-      infoEl.innerHTML='✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
-      infoEl.style.color='#007bff';
-      infoEl.style.fontWeight='700';
-      celebrate();
+      setTimeout(()=>{
+        infoEl.innerHTML='🎉 หลอกแล้ว! เป็นลูกชายครับ! 🎉';
+        infoEl.style.color='#007bff';
+        infoEl.style.fontWeight='700';
+        infoEl.style.fontSize='1.05rem';
+        celebrate();
+      },400);
     }
   });
 
   /* ── init ── */
+  drawPink();
   drawReveal();
   drawShell();
 
