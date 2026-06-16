@@ -272,7 +272,10 @@
   function drawShell(){
     sCtx.clearRect(0,0,W,H);
     sCtx.save();
-    eggClip(sCtx);
+    // clip ครั้งเดียว ครอบทุกอย่าง รอยร้าวจะไม่ทะลุออกนอกขอบ
+    sCtx.beginPath();
+    sCtx.ellipse(CX,CY,RX,RY,0,0,Math.PI*2);
+    sCtx.clip();
 
     // พื้นเปลือก
     const sg = sCtx.createRadialGradient(CX-25,CY-40,8,CX,CY,RX*1.1);
@@ -289,9 +292,8 @@
       sCtx.arc(CX-RX+Math.random()*RX*2,CY-RY+Math.random()*RY*2,Math.random()*1.8,0,Math.PI*2);
       sCtx.fill();
     }
-    sCtx.restore();
 
-    // เจาะรูด้วย polygon ขรุขระ
+    // เจาะรูด้วย polygon ขรุขระ (อยู่ใน clip แล้ว ไม่ทะลุขอบ)
     sCtx.globalCompositeOperation='destination-out';
     peeled.forEach(p => {
       if (!p.poly) return;
@@ -316,7 +318,7 @@
     }
     sCtx.globalCompositeOperation='source-over';
 
-    // วาดรอยร้าว
+    // วาดรอยร้าว (อยู่ใน clip ขอบไข่ ไม่ทะลุออกนอก)
     allCracks.forEach(c => {
       sCtx.beginPath();
       sCtx.moveTo(c.x1, c.y1);
@@ -326,6 +328,8 @@
       sCtx.lineCap = 'round';
       sCtx.stroke();
     });
+
+    sCtx.restore(); // ปิด clip ขอบไข่
 
     // ขอบ
     sCtx.beginPath();
