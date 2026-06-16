@@ -4,25 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Baby Reveal Sparkle</title>
-    <!-- Open Graph for Line/Facebook Preview -->
     <meta property="og:title" content="มีของขวัญมาให้ขูดลุ้นกันครับ!" />
     <meta property="og:description" content="ลองขูดดูซิว่า... จะได้อะไร?" />
-    <meta property="og:image" content="https://via.placeholder.com/1200x630.png?text=Scratch+Here" />
-
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #f0f8ff; /* Alice Blue */
-            --boy-blue: #007bff; /* Bright Blue */
+            --bg-color: #f0f8ff;
+            --boy-blue: #007bff;
             --gold: #d4af37;
             --main-font: 'Kanit', sans-serif;
         }
 
+        * { box-sizing: border-box; }
+
         body {
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -34,110 +32,92 @@
             background-size: 40px 40px;
             background-position: 0 0, 20px 20px;
             font-family: var(--main-font);
-            overflow: hidden; /* Prevent scrolling during confetti */
         }
 
         .container {
             text-align: center;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
+            background: rgba(255, 255, 255, 0.97);
+            padding: 40px 30px;
             border-radius: 25px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.15);
             border: 4px solid var(--gold);
-            max-width: 90%;
+            max-width: 420px;
+            width: 100%;
         }
 
         h1 {
             color: #444;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin: 0 0 28px;
+            font-size: 2.2rem;
         }
 
-        /* Scratch Card Area */
-        .scratch-container {
+        /* Wrapper กำหนดขนาดจริงด้วย CSS */
+        .scratch-wrapper {
             position: relative;
-            width: 320px;
-            height: 320px;
+            width: 300px;
+            height: 300px;
             margin: 0 auto;
-            cursor: pointer;
             border-radius: 20px;
             overflow: hidden;
-            border: 8px solid white;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            border: 6px solid var(--gold);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            /* ป้องกัน select/highlight บน mobile */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
         }
 
-        /* The hidden content (under the scratch layer) */
-        .scratch-results {
+        /* ชั้นเฉลยด้านล่าง */
+        .scratch-result {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: var(--boy-blue);
+            background: linear-gradient(135deg, #0062cc 0%, #007bff 50%, #4da3ff 100%);
             color: white;
-            border-radius: 12px;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
+            gap: 6px;
         }
 
-        .scratch-results.show {
-            opacity: 1;
-        }
-
-        .result-icon {
-            font-size: 80px;
-            margin-bottom: -10px;
-        }
-
+        .result-icon { font-size: 72px; line-height: 1; }
         .result-text-big {
-            font-size: 3rem;
+            font-size: 2.6rem;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
         }
+        .result-text-small { font-size: 1rem; opacity: 0.9; }
 
-        .result-text-small {
-            font-size: 1.2rem;
-            margin-top: -10px;
-        }
-
-        /* The canvas scratch layer */
+        /* Canvas ขูด — อยู่บนสุด */
         #scratch-canvas {
             position: absolute;
-            top: 0;
-            left: 0;
+            inset: 0;
+            /* ขนาด CSS ตรงกับ wrapper เสมอ */
             width: 100%;
             height: 100%;
-            border-radius: 12px;
-            z-index: 1;
+            cursor: crosshair;
+            z-index: 2;
+            /* transition สำหรับ fade-out เมื่อเผยเฉลย */
+            transition: opacity 0.8s ease;
         }
 
         .instruction {
             color: #666;
             margin-top: 20px;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
+            min-height: 1.6em;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
+            0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 400px) {
-            .scratch-container {
-                width: 280px;
-                height: 280px;
-            }
-            h1 { font-size: 2rem; }
-            .result-text-big { font-size: 2.2rem; }
+        @media (max-width: 380px) {
+            .scratch-wrapper { width: 260px; height: 260px; }
+            h1 { font-size: 1.8rem; }
+            .result-text-big { font-size: 2rem; }
         }
     </style>
 </head>
@@ -145,172 +125,157 @@
 
 <div class="container">
     <h1>ขูดลุ้นของขวัญกัน!</h1>
-    
-    <div class="scratch-container" id="js-scratch-container">
-        
-        <!-- นี่คือส่วนเฉลยที่จะอยู่ด้านล่าง -->
-        <div class="scratch-results" id="js-scratch-results">
+
+    <div class="scratch-wrapper" id="js-wrapper">
+        <!-- ชั้นเฉลย (ล่าง) -->
+        <div class="scratch-result">
             <div class="result-icon">👶🏻⚽</div>
             <div class="result-text-big">ได้ลูกชาย</div>
             <div class="result-text-small">คุณปู่คุณย่าเตรียมรับขวัญนะครับ</div>
         </div>
 
-        <!-- นี่คือ Layer สีทองด้านบนที่ต้องขูด -->
-        <canvas id="scratch-canvas" width="320" height="320"></canvas>
+        <!-- ชั้นทองด้านบน -->
+        <canvas id="scratch-canvas"></canvas>
     </div>
 
-    <p class="instruction" id="js-instruction">ใช้นิ้วหรือเมาส์ขูดที่ช่องด้านบนได้เลย</p>
+    <p class="instruction" id="js-instruction">ใช้นิ้วหรือเมาส์ขูดที่ช่องด้านบนได้เลย 🎁</p>
 </div>
 
-<!-- Confetti library for the celebration effect -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
-    const canvas = document.getElementById('scratch-canvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('js-scratch-container');
-    const results = document.getElementById('js-scratch-results');
+(function () {
+    const wrapper     = document.getElementById('js-wrapper');
+    const canvas      = document.getElementById('scratch-canvas');
+    const ctx         = canvas.getContext('2d');
     const instruction = document.getElementById('js-instruction');
-    
+
     let isDrawing = false;
-    let totalPixels = canvas.width * canvas.height;
-    let clearedPixels = 0;
-    const revealThreshold = 0.4; // 40% cleared to reveal
-    let revealed = false;
+    let revealed  = false;
 
-    // --- SETUP THE SCRATCH LAYER (GOLD) ---
-    function initScratchLayer() {
-        // Create a nice gradient for the scratch surface
-        const gradient = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, 0,
-            canvas.width / 2, canvas.height / 2, canvas.width
-        );
-        gradient.addColorStop(0, '#f9df7b'); // Light Gold
-        gradient.addColorStop(0.5, '#d4af37'); // Metallic Gold
-        gradient.addColorStop(1, '#a67c00'); // Dark Gold
+    /* ─── 1. ตั้งค่า canvas ให้ตรงกับขนาด wrapper จริงๆ ─── */
+    function resizeCanvas() {
+        const W = wrapper.offsetWidth;
+        const H = wrapper.offsetHeight;
+        canvas.width  = W;
+        canvas.height = H;
+        if (!revealed) drawGoldLayer(W, H);
+    }
 
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    /* ─── 2. วาดชั้นสีทอง ─── */
+    function drawGoldLayer(W, H) {
+        const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.85);
+        grad.addColorStop(0,   '#ffe97d');
+        grad.addColorStop(0.5, '#d4af37');
+        grad.addColorStop(1,   '#a67c00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
 
-        // Add some "texture" or sparkles on the scratch layer
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        for (let i = 0; i < 200; i++) {
+        // จุดประกาย
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        for (let i = 0; i < 300; i++) {
             ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2, 0, Math.PI * 2);
+            ctx.arc(Math.random()*W, Math.random()*H, Math.random()*2.2, 0, Math.PI*2);
             ctx.fill();
         }
 
-        // Add 'Scratch Here' text directly on the canvas
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.font = '700 24px Kanit';
+        // ข้อความ
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.font = `700 ${Math.round(W * 0.08)}px Kanit, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('ขูดตรงนี้', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('ขูดตรงนี้ 🎁', W/2, H/2);
     }
 
-    // --- DRAWING / SCRATCHING LOGIC ---
-    function getMousePos(e) {
+    /* ─── 3. หาพิกัดบน canvas จาก event ─── */
+    function getPos(e) {
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
+        // scaleX/Y แก้กรณี CSS size ≠ canvas pixel size (ไม่ควรเกิดแต่ safety)
+        const scaleX = canvas.width  / rect.width;
         const scaleY = canvas.height / rect.height;
-        
-        // Handle touch and mouse events
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
+        const src = e.touches ? e.touches[0] : e;
         return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
+            x: (src.clientX - rect.left) * scaleX,
+            y: (src.clientY - rect.top)  * scaleY
         };
     }
 
-    function scratch(e) {
+    /* ─── 4. ขูด ─── */
+    function doScratch(e) {
         if (!isDrawing || revealed) return;
-        e.preventDefault(); // Prevent scrolling on touch
+        e.preventDefault();
 
-        const { x, y } = getMousePos(e);
-
-        // This is what actually 'scratches' - making pixels transparent
+        const { x, y } = getPos(e);
         ctx.globalCompositeOperation = 'destination-out';
         ctx.beginPath();
-        ctx.arc(x, y, 25, 0, Math.PI * 2, false); // Brush size is 25
+        ctx.arc(x, y, 28, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
 
-        checkCompletion();
+        checkReveal();
     }
 
-    // --- CHECK HOW MUCH IS CLEARED ---
-    function checkCompletion() {
+    /* ─── 5. เช็คว่าขูดพอหรือยัง ─── */
+    function checkReveal() {
         if (revealed) return;
 
-        // Sample pixels to see how much is transparent
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let pixelsCleared = 0;
-        
-        // Check every 20th pixel for performance
-        for (let i = 0; i < imageData.data.length; i += 4 * 20) {
-            if (imageData.data[i + 3] === 0) { // Alpha channel is 0 (transparent)
-                pixelsCleared += 20;
-            }
+        const data    = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const total   = data.length / 4;          // จำนวน pixel ทั้งหมด
+        let   cleared = 0;
+
+        // สุ่มตรวจทุก 4 pixel เพื่อ performance
+        for (let i = 3; i < data.length; i += 4 * 4) {
+            if (data[i] < 10) cleared++;           // alpha ≈ 0 = ถูกขูดไปแล้ว
         }
 
-        if (pixelsCleared / totalPixels >= revealThreshold) {
-            revealFinalResult();
+        // ถ้าขูดไป 40% ขึ้นไป → เผย
+        if (cleared / (total / 4) >= 0.40) {
+            revealAnswer();
         }
     }
 
-    // --- REVEAL ANIMATION & CELEBRATION ---
-    function revealFinalResult() {
+    /* ─── 6. เผยคำตอบ ─── */
+    function revealAnswer() {
         if (revealed) return;
         revealed = true;
-        
-        results.classList.add('show');
-        instruction.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
-        
-        // Add a nice fade out to the canvas itself
-        canvas.style.transition = 'opacity 1s ease-out';
+
+        // Fade canvas ออก
         canvas.style.opacity = '0';
-        
-        // Fire Confetti!
-        var duration = 4 * 1000;
-        var animationEnd = Date.now() + duration;
-        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        canvas.style.pointerEvents = 'none';
 
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-        }
+        instruction.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
+        instruction.style.animation = 'none';
+        instruction.style.color = '#007bff';
+        instruction.style.fontWeight = '700';
 
-        var interval = setInterval(function() {
-            var timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
-            }
-
-            var particleCount = 50 * (timeLeft / duration);
-            // Confetti in boyish blue colors
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#007bff', '#87ceeb', '#ffffff'] }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#007bff', '#e0f7fa', '#d4af37'] }));
-        }, 250);
+        // Confetti 🎉
+        const end  = Date.now() + 4500;
+        const tick = setInterval(() => {
+            if (Date.now() > end) return clearInterval(tick);
+            const t = (end - Date.now()) / 4500;
+            confetti({ particleCount: Math.round(40 * t), spread: 80, startVelocity: 35,
+                origin: { x: 0.2, y: 0.6 }, colors: ['#007bff','#87ceeb','#ffffff','#d4af37'] });
+            confetti({ particleCount: Math.round(40 * t), spread: 80, startVelocity: 35,
+                origin: { x: 0.8, y: 0.6 }, colors: ['#007bff','#e0f7fa','#ffffff','#ffe97d'] });
+        }, 300);
     }
 
-    // --- EVENT LISTENERS ---
-    // Start drawing
-    canvas.addEventListener('mousedown', (e) => { isDrawing = true; scratch(e); });
-    canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+    /* ─── 7. Event Listeners ─── */
+    // Mouse
+    canvas.addEventListener('mousedown',  (e) => { isDrawing = true;  doScratch(e); });
+    window.addEventListener('mousemove',  doScratch);
+    window.addEventListener('mouseup',    () => { isDrawing = false; });
 
-    // Drawing
-    window.addEventListener('mousemove', scratch);
-    window.addEventListener('touchmove', scratch);
+    // Touch
+    canvas.addEventListener('touchstart', (e) => { isDrawing = true;  doScratch(e); }, { passive: false });
+    canvas.addEventListener('touchmove',  doScratch,                                   { passive: false });
+    canvas.addEventListener('touchend',   () => { isDrawing = false; });
 
-    // Stop drawing
-    window.addEventListener('mouseup', () => isDrawing = false);
-    window.addEventListener('touchend', () => isDrawing = false);
-
-    // Initial setup
-    initScratchLayer();
-
+    /* ─── 8. Init ─── */
+    resizeCanvas();
+    // ถ้า window resize ให้วาดใหม่ (rare บน mobile)
+    window.addEventListener('resize', resizeCanvas);
+})();
 </script>
 
 </body>
