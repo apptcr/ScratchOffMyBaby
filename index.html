@@ -67,7 +67,7 @@
             touch-action: none;
         }
 
-        /* ชั้นเฉลยด้านล่าง */
+        /* ชั้นเฉลยด้านล่าง — ซ่อนไว้ก่อน */
         .scratch-result {
             position: absolute;
             inset: 0;
@@ -78,6 +78,12 @@
             background: linear-gradient(135deg, #0062cc 0%, #007bff 50%, #4da3ff 100%);
             color: white;
             gap: 6px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .scratch-result.visible {
+            opacity: 1;
         }
 
         .result-icon { font-size: 72px; line-height: 1; }
@@ -149,6 +155,7 @@
     const canvas      = document.getElementById('scratch-canvas');
     const ctx         = canvas.getContext('2d');
     const instruction = document.getElementById('js-instruction');
+    const resultEl    = document.querySelector('.scratch-result');
 
     let isDrawing = false;
     let revealed  = false;
@@ -239,9 +246,12 @@
         if (revealed) return;
         revealed = true;
 
-        // Fade canvas ออก
-        canvas.style.opacity = '0';
-        canvas.style.pointerEvents = 'none';
+        // เผยชั้นเฉลยก่อน แล้วค่อย fade canvas ออก
+        resultEl.classList.add('visible');
+        setTimeout(() => {
+            canvas.style.opacity = '0';
+            canvas.style.pointerEvents = 'none';
+        }, 200);
 
         instruction.innerHTML = '✨ สมาชิกใหม่เป็นลูกชายครับ! ✨';
         instruction.style.animation = 'none';
